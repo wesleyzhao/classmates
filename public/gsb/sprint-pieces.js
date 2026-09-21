@@ -21,4 +21,3 @@ export function zoneMarkup(choice, i, photoUrls) {
   if (choice.image) return html`<span class="slot filled"><span class="key" aria-hidden="true">${i + 1}</span><img class="choice-photo" src=${photoUrls.get(choice.image)} alt=${`Option photo ${i + 1}`} draggable=${false} /></span><span class="bod ghost"></span>`;
   return html`<span class="plate ${choice.label.length > 22 ? "long" : ""}"><span class="key" aria-hidden="true">${i + 1}</span><span class="pname">${choice.label}</span></span><span class="bod ghost"></span>`;
 }
-

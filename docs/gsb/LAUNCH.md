@@ -7,8 +7,8 @@ This release keeps the existing Vercel project, production URL, database, portra
 - [x] Verify the clean source matches the reviewed release and check Claude for new work.
 - [x] Add a configurable ten-face entry screen and automatic guest countdown after media preload.
 - [x] Keep one guest attempt per browser, resume interrupted attempts and require verified email to save or continue.
-- [ ] Preserve invitations, nickname editing, Practice, Speed, duels, quizzes, races and rankings.
-- [ ] Run unit, type, API, browser, phone/desktop, privacy and build checks.
+- [x] Preserve invitations, nickname editing, Practice, Speed, duels, quizzes, races and rankings.
+- [x] Run unit, type, API, browser, phone/desktop, privacy and build checks.
 - [x] Publish the clean repository and connect it to the existing Vercel project.
 - [ ] Enable a bounded ten-person guest sample outside Git, deploy to the same URL and verify production.
 - [ ] Record source/deployment, rollback, preservation evidence and remaining limitations.
@@ -28,3 +28,13 @@ No production migration, roster import, account cleanup or tester-door change is
 Work in `/Users/wesley/projects/parlor-public-source`, and start new branches from public `main`. The old `/Users/wesley/projects/parlor-gsb` Claude checkout and `/Users/wesley/projects/parlor-gsb-history` remain untouched historical checkouts. Bring future design edits across as reviewed file changes; never merge their private history into this repository. Read `FRONTEND-INTEGRATION.md` for controller boundaries and `GUEST-ROUND.md` for guest behavior and limits.
 
 The guest limit is per browser, backed by a cookie and server result. A different browser or cleared cookies can obtain another attempt, always from the same small sample. No fingerprinting was added. A claim needs the original browser cookie and a verified eligible email. Physical iPhone tilt and a fresh production inbox delivery are not part of the automated verification.
+
+## Pre-deployment verification (September 21, 2026)
+
+- 506 unit tests; JavaScript type checking; copy lint; both Parlor and Classmates builds.
+- 66 Classmates browser checks in Chromium and WebKit, covering Practice, nicknames, invites, rankings, Speed, challenges, duels, quizzes and races.
+- 12 guest browser checks in mobile touch contexts (Chromium and WebKit), including countdown visibility, held-key rejection, inline email errors, refresh/resume, claim and media cleanup. Measured tap-to-next transitions stayed below 10 ms locally with no requests between questions.
+- 7 original Parlor browser scenarios in Chromium; 2 guest and 8 Speed HTTP/database integration tests in isolated test schemas.
+- Phone and desktop screenshots inspected. No physical iPhone test or new production email sent during this release.
+
+The first feature-branch CI run passed all unit tests but failed the documentation voice check. Range/countdown punctuation was corrected. The first branch push also revealed that the Git glob `*` did not cover names containing `/`; the rule now uses `**` with an explicit `main` exception. That preview had no production database, Blob or private authentication credentials. Production remained on the prior deployment throughout testing.

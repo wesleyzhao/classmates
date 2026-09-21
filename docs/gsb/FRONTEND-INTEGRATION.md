@@ -18,7 +18,7 @@ The canonical source is now [wesleyzhao/classmates](https://github.com/wesleyzha
 | Speed round | `/speed`, `SprintRound` plus `useSprintRound` | Every tap immediately, including wrong answers | One completed log, browser time, accuracy-first score and fastest-perfect records, no Elo |
 | Together | Home / Start a quiz, room view in `app.js` | Server moves every player through shared phases | Server scores accuracy and speed, server-only answer key before reveal, multiplayer Elo |
 | Race | Home / Start a race, same room view | Correct answer only; mistakes remain on that question | Server timing/order, fixed account seats, multiplayer Elo |
-| Guest introduction | `/` and `/guest`, `GuestRound` | Ten preloaded faces, automatic 3–2–1, immediate taps or flicks | One browser attempt, inline email sign-in to save or continue; operator-configured sample only |
+| Guest introduction | `/` and `/guest`, `GuestRound` | Ten preloaded faces, automatic 3-2-1, immediate taps or flicks | One browser attempt, inline email sign-in to save or continue; operator-configured sample only |
 
 `/profile` edits the current nickname without changing identity; `/scores` renders the server's rating and badge decisions. Keep room sharing, chat, rejoin, sign-out, used-link recovery and browser-back navigation reachable. Home must retain the speed entry in addition to practice and both multiplayer modes.
 
