@@ -1,0 +1,13 @@
+# Deployment inputs exclude credentials, private import artifacts, and local verification output.
+.private/
+private-content/
+*.jsonl
+*.pem
+*.p12
+output/
+test-results/
+playwright-report/
+.env*
+docs/
+tests/
+examples/

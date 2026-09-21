@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor race screens</title>
+  <!-- Every state of the race screen, drawn from fixed views, with no server and no room.
+       It is how the screens are reviewed and screenshotted:
+         /dev/race.html?state=card&theme=playful
+       States: card, text, reveal, tiles, nobody, long, over, editor. The views below are the
+       shape kit.js builds in view(); if that shape changes, change these too and the screens
+       stay honest. -->
+  <link rel="stylesheet" href="../themes/base.css">
+  <link rel="stylesheet" href="../themes/editorial.css">
+  <link rel="stylesheet" href="../themes/playful.css">
+  <script>
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'playful' || theme === 'editorial') document.documentElement.dataset.theme = theme;
+  </script>
+</head>
+<body>
+<div class="app">
+  <main class="page page-wide" id="app"></main>
+</div>
+<script type="module">
+  import { html, render, Fragment } from '../app/h.js';
+  import { Play, Editor } from '../kits/race/ui.js';
+
+  const NOW = Date.now();
+  const ME = 'wes';
+  const TRACK = 12;
+
+  const PLAYERS = [
+    { id: 'wes', name: 'Wesley', avatar: '\u{1F98A}', seat: 0, connected: true, isHost: true, joinedAt: NOW, lastSeen: NOW },
+    { id: 'nina', name: 'Nina', avatar: '\u{1F419}', seat: 1, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+    { id: 'sam', name: 'Sam', avatar: '\u{1F43C}', seat: 2, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+  ];
+
+  const CARD = { id: 'pt', prompt: "Which country's flag is this?", emoji: '\u{1F1F5}\u{1F1F9}' };
+  const CHOICES = ['Spain', 'Portugal', 'Italy', 'Greece'];
+
+  const RESULTS = [
+    { playerId: 'sam', correct: true, value: 'Portugal', spaces: 2, ms: 3000 },
+    { playerId: 'wes', correct: true, value: 'Portugal', spaces: 1, ms: 5200 },
+    { playerId: 'nina', correct: false, value: 'Spain', spaces: 0, ms: 7000 },
+  ];
+
+  /** A card still running. The person looking at it is not the host, so they have no buttons. */
+  const cardView = (over) => ({
+    phase: 'card',
+    answerMode: over.answerMode || 'choices',
+    seconds: 10,
+    boost: true,
+    trackLength: over.trackLength || TRACK,
+    round: {
+      n: 4,
+      card: over.answerMode === 'text' ? CARD : { ...CARD, choices: CHOICES },
+      startedAt: NOW - 4000,
+      endsAt: NOW + 5800,
+      answeredIds: over.answeredIds || [],
+      canAnswer: true,
+      mine: over.mine === undefined ? null : over.mine,
+    },
+    pos: over.pos || { wes: 3, nina: 2, sam: 5 },
+    wakeAt: NOW + 5800,
+    waitingOn: over.waitingOn || ['nina'],
+    actions: over.actions || [{ type: 'skip', label: 'Show the answer', kind: 'secondary', host: true }],
+  });
+
+  /** The answer is up. This one is the host's view, so the platform draws them a button. */
+  const revealView = (over) => ({
+    phase: over.phase || 'reveal',
+    answerMode: over.answerMode || 'text',
+    seconds: 10,
+    boost: true,
+    trackLength: over.trackLength || TRACK,
+    round: {
+      n: 4,
+      card: over.answerMode === 'choices' ? { ...CARD, choices: CHOICES } : CARD,
+      startedAt: NOW - 10_000,
+      endsAt: NOW - 1000,
+      answeredIds: ['sam', 'wes', 'nina'],
+      canAnswer: true,
+      answer: 'Portugal',
+      correctChoice: over.answerMode === 'choices' ? 1 : -1,
+      firstId: over.firstId === undefined ? 'sam' : over.firstId,
+      results: over.results || RESULTS,
+      mine: over.mine === undefined
+        ? { value: 'Portugal', pick: over.answerMode === 'choices' ? 1 : -1, correct: true, spaces: 1, ms: 5200 }
+        : over.mine,
+    },
+    pos: over.pos || { wes: 4, nina: 2, sam: 7 },
+    wakeAt: over.wakeAt === undefined ? NOW + 2400 : over.wakeAt,
+    waitingOn: [],
+    actions: over.actions || [],
+  });
+
+  const STATES = {
+    card: () => cardView({ mine: { value: 1, at: NOW - 3000 }, answeredIds: ['wes', 'sam'] }),
+    text: () => cardView({ answerMode: 'text', waitingOn: ['wes', 'nina', 'sam'] }),
+    reveal: () => revealView({}),
+    tiles: () => revealView({ answerMode: 'choices' }),
+    nobody: () => revealView({
+      answerMode: 'choices',
+      firstId: null,
+      results: [
+        { playerId: 'nina', correct: false, value: 'Spain', spaces: 0, ms: 4000 },
+        { playerId: 'sam', correct: false, value: 'Italy', spaces: 0, ms: 6100 },
+      ],
+      mine: null,
+      pos: { wes: 4, nina: 2, sam: 5 },
+    }),
+    long: () => cardView({
+      trackLength: 40,
+      mine: { value: 1, at: NOW - 3000 },
+      answeredIds: ['wes', 'sam'],
+      pos: { wes: 17, nina: 9, sam: 22 },
+    }),
+    over: () => revealView({
+      phase: 'over',
+      answerMode: 'choices',
+      wakeAt: null,
+      pos: { wes: 9, nina: 6, sam: 12 },
+    }),
+  };
+
+  const state = new URLSearchParams(location.search).get('state') || 'card';
+
+  /** The creator's content step, which is not a view at all. */
+  const DECKS = {
+    countries: {
+      id: 'countries',
+      title: 'Countries',
+      version: 1,
+      categories: [
+        { id: 'europe', name: 'Europe', emoji: '\u{1F30D}' },
+        { id: 'africa', name: 'Africa', emoji: '\u{1F30D}' },
+        { id: 'asia', name: 'Asia', emoji: '\u{1F30F}' },
+        { id: 'americas', name: 'Americas', emoji: '\u{1F30E}' },
+      ],
+      cards: [],
+    },
+  };
+
+  if (state === 'editor') {
+    let content = { decks: ['countries'], categories: ['europe'] };
+    const draw = () => render(
+      html`<${Editor} content=${content} decks=${DECKS} onChange=${(next) => { content = next; draw(); }} />`,
+      document.getElementById('app'),
+    );
+    draw();
+  } else {
+    const view = (STATES[state] || STATES.card)();
+
+    /**
+     * The platform draws the buttons in view.actions under the screen, so the harness does
+     * the same. Kits never draw them (docs/KIT-CONTRACT.md, rule R3).
+     */
+    function Harness() {
+      return html`
+        <${Fragment}>
+          <${Play} view=${view} me=${ME} players=${PLAYERS} send=${(type, payload) => console.log('send', type, payload)} now=${Date.now()} />
+          ${view.actions.length ? html`
+            <div class="actionbar">
+              ${view.actions.map((action) => html`
+                <button class=${action.kind === 'primary' ? 'btn btn-primary btn-block btn-tall' : 'btn btn-secondary btn-block'} key=${action.label}>${action.label}</button>`)}
+            </div>` : null}
+        <//>`;
+    }
+
+    render(html`<${Harness} />`, document.getElementById('app'));
+  }
+</script>
+</body>
+</html>

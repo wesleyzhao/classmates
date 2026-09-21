@@ -1,0 +1,33 @@
+// Own-roster publishing exercises real Postgres, with a private-upload stub and synthetic portraits only.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {randomUUID} from 'node:crypto';
+import {database,latestDeck} from '../../server/gsb/db.js';
+import {prepareRoster,publishRoster} from '../../scripts/lib/private-roster.js';
+if(process.env.NODE_ENV!=='test'||process.env.GSB_TEST_SCHEMA!=='gsb_test_import'||process.env.VERCEL)throw new Error('Isolated import schema required.');
+test('a private import preserves opt-outs and account data across retries and content updates',async t=>{
+  const {query}=database(),root=await mkdtemp(join(tmpdir(),'parlor-import-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const portrait=Buffer.from([255,216,255,192,0,11,8,0,2,0,2,1,1,17,0,255,218,0,8,1,1,0,0,63,0,1,255,217]);
+  await writeFile(join(root,'photo.jpg'),portrait);
+  const manifest={cohort:'fixture-'+randomUUID(),people:[0,1,2,3].map(i=>({id:`person-${i}`,name:`Example ${i}`,photo:'photo.jpg'}))};
+  const path=join(root,'manifest.json');await writeFile(path,JSON.stringify(manifest));
+  const roster=await prepareRoster(path),uploads=[];
+  const put=async(path,bytes,options)=>{assert.equal(options.access,'private');uploads.push(path);};
+  const id=randomUUID();
+  await query('insert into gsb_accounts(id,email,nickname) values($1,$2,$3)',[id,`${id}@door.invalid`,'Preserve tester']);
+  await publishRoster(roster,{query,put});assert.equal(uploads.length,4);
+  assert.equal((await latestDeck()).id,roster.revision);
+  const excluded=roster.people[0].id;await query('update gsb_people set excluded=true where id=$1',[excluded]);
+  await publishRoster(roster,{query,put});assert.equal(uploads.length,4);
+  assert.equal((await query('select count(*)::int as n from gsb_revisions where id=$1',[roster.revision]))[0].n,1);
+  manifest.people[0].name='Changed Example';await writeFile(path,JSON.stringify(manifest));
+  const changed=await prepareRoster(path);await publishRoster(changed,{query,put});
+  assert.equal(uploads.length,4);assert.notEqual(changed.revision,roster.revision);
+  const current=await latestDeck();assert.equal(current.id,changed.revision);assert.equal(current.cards.length,3);assert.ok(!current.cards.some(c=>c.id===excluded));
+  assert.equal((await query('select nickname from gsb_accounts where id=$1',[id]))[0].nickname,'Preserve tester');
+  assert.equal((await query('select excluded from gsb_people where id=$1',[excluded]))[0].excluded,true);
+  assert.equal((await query('select count(*)::int as n from gsb_assets where person_id=any($1::text[])',[roster.people.map(p=>p.id)]))[0].n,4);
+});

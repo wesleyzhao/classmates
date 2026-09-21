@@ -1,0 +1,77 @@
+/* playful.css: the arcade look. White with a tinted stage, rounded type at heavy weights, chunky
+   tiles and buttons with a bottom edge that presses down, violet and sun and mint. Every value is a
+   token from base.css; the rules below are the theme's signatures. Applied with <html data-theme="playful">. */
+
+html[data-theme="playful"] {
+  --bg: #ffffff;
+  --surface: #f4f6ff;
+  --stage: #f4f6ff;
+  --ink: #25253a;
+  --ink-2: #5b5b78;
+  --muted: #6f6f8c;
+  --rule: #e6e6ef;
+  --rule-strong: #cfcfe0;
+  --accent: #6d4cff;
+  --accent-ink: #ffffff;
+  --accent-soft: #ebe6ff;
+  --good: #2fc57b;
+  --good-text: #147f49;            /* the mint is a fill color; text needs the darker green */
+  --good-soft: #dff7ea;
+  --bad: #ff5c69;
+  --bad-text: #c92a35;
+  --bad-soft: #ffe6e8;
+  --warn: #ffc93c;
+  --warn-soft: #fff4cc;
+
+  --font-display: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  --font-ui: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  --weight-display: 800;
+  --weight-ui: 700;
+  --weight-body: 500;
+  --tracking-display: -0.01em;
+
+  --radius-s: 10px;
+  --radius-m: 14px;
+  --radius-l: 24px;
+  --btn-radius: 18px;
+  --tile-radius: 18px;
+  --btn-edge: 4px;
+  --primary-bg: #6d4cff;
+  --primary-ink: #ffffff;
+  --primary-edge: #4f33d6;
+  --secondary-bg: #ffffff;
+  --secondary-ink: #25253a;
+  --secondary-border: #cfcfe0;
+  --secondary-edge: #cfcfe0;
+}
+
+/* Signatures: bolder buttons with a real edge, tiles in a grid, softer surfaces without hairlines. */
+html[data-theme="playful"] .btn { border-width: 2px; }
+html[data-theme="playful"] .btn-ghost { border-width: 0; }
+html[data-theme="playful"] .choice { border-width: 2px; }
+html[data-theme="playful"] .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+html[data-theme="playful"] .choice { min-height: 88px; font-size: 19px; }
+html[data-theme="playful"] .choices.is-long { grid-template-columns: 1fr; }
+html[data-theme="playful"] .choices.is-long .choice { min-height: 60px; }
+html[data-theme="playful"] .stage { border: 0; }
+html[data-theme="playful"] .surface { border: 0; }
+html[data-theme="playful"] .list-row { border-bottom: 0; background: var(--surface); border-radius: var(--radius-l); padding: var(--space-2) var(--space-4); margin-bottom: 10px; }
+html[data-theme="playful"] .list-row .title { font-size: 18px; }
+html[data-theme="playful"] .section-head { border-bottom: 0; padding-bottom: 4px; }
+html[data-theme="playful"] .masthead { border-bottom: 0; }
+html[data-theme="playful"] .rule { border-top-color: transparent; }
+html[data-theme="playful"] .avatar { border: 0; background: var(--surface); }
+html[data-theme="playful"] .tag { border: 0; background: var(--surface); font-weight: var(--weight-ui); }
+html[data-theme="playful"] .chip { border: 0; background: var(--surface); }
+html[data-theme="playful"] .chip.is-active { background: var(--accent); color: var(--accent-ink); }
+html[data-theme="playful"] .score, html[data-theme="playful"] .rank, html[data-theme="playful"] .timer-ring .label, html[data-theme="playful"] .code-text { font-family: var(--font-display); }
+html[data-theme="playful"] .timer-ring .arc { stroke: var(--good); }
+html[data-theme="playful"] .input { border-width: 2px; background: #ffffff; }
+html[data-theme="playful"] .actionbar { border-top: 0; }
+html[data-theme="playful"] .toast { background: var(--ink); }
+html[data-theme="playful"] .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+/* Cards: the tiles round the table lose their hairline like every other surface here, and a
+   card back gets the same 2px edge the buttons wear. */
+html[data-theme="playful"] .seat { border: 0; }
+html[data-theme="playful"] .seat.is-turn { box-shadow: inset 0 0 0 2px var(--accent); }
+html[data-theme="playful"] .card-back { border-width: 2px; }

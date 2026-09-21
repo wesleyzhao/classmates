@@ -1,0 +1,2 @@
+<!-- Synthetic silhouette used only by explicit test fixtures; contains no class content. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180"><rect width="160" height="180" fill="#eee9df"/><circle cx="80" cy="63" r="31" fill="#b5a58a"/><path d="M18 180v-20a62 62 0 01124 0v20" fill="#8c1515"/></svg>

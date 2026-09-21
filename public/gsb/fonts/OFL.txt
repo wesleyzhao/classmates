@@ -1,0 +1,6 @@
+Vendored fonts for the Classmates speed round. Both are published under the SIL Open Font License 1.1 (https://openfontlicense.org).
+
+- Press Start 2P, by CodeMan38 (https://fonts.google.com/specimen/Press+Start+2P). File: press-start-2p-latin.woff2 (latin subset).
+- VT323, by Peter Hull (https://fonts.google.com/specimen/VT323). Files: vt323-latin.woff2 and vt323-latin-ext.woff2.
+
+The files are the unmodified woff2 builds served by Google Fonts, copied here so the private app makes no third-party font requests.

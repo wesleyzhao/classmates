@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-theme="playful">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor cards screens</title>
+  <!-- Every state of the Crazy Eights screen, drawn from fixed views, with no server and no
+       room. It is how the screen is reviewed and screenshotted:
+         /dev/cards.html?state=turn&theme=playful
+       States: turn, draw, waiting, eight, win, drew, watching, full, editor. The views below are the shape
+       kit.js builds in view(); if that shape changes, change these too. -->
+  <link rel="stylesheet" href="../themes/base.css">
+  <link rel="stylesheet" href="../themes/editorial.css">
+  <link rel="stylesheet" href="../themes/playful.css">
+  <script>
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'playful' || theme === 'editorial') document.documentElement.dataset.theme = theme;
+  </script>
+</head>
+<body>
+<div class="app">
+  <main class="page" id="app"></main>
+</div>
+<script type="module">
+  import { html, render, Fragment } from '../app/h.js';
+  import { Play, Editor } from '../kits/cards/ui.js';
+
+  const NOW = Date.now();
+  const ME = 'wes';
+
+  const PLAYERS = [
+    { id: 'wes', name: 'Wesley', avatar: '🦊', seat: 0, connected: true, isHost: true, joinedAt: NOW, lastSeen: NOW },
+    { id: 'nina', name: 'Nina', avatar: '🐙', seat: 1, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+    { id: 'sam', name: 'Sam', avatar: '🐼', seat: 2, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+    { id: 'ali', name: 'Ali', avatar: '🦄', seat: 3, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+  ];
+
+  const DRAW = { type: 'draw', label: 'Draw a card', kind: 'secondary' };
+  const SKIP = { type: 'skip', label: 'Skip Nina', kind: 'danger', host: true, confirm: 'Skip this turn and move on to the next player?' };
+
+  /** The shape kit.js returns from view(), with the parts each state overrides. */
+  const cardsView = (over) => ({
+    phase: 'playing',
+    turn: 'wes',
+    seats: ['wes', 'nina', 'sam', 'ali'],
+    dir: 1,
+    top: '7H',
+    suit: 'H',
+    suitName: 'hearts',
+    discardCount: 9,
+    drawCount: 31,
+    handCounts: { wes: 5, nina: 5, sam: 2, ali: 7 },
+    hand: ['KS', '7D', '8C', '2H', 'JC'],
+    playable: ['7D', '8C', '2H'],
+    drew: null,
+    pendingDraw: 0,
+    lastPlay: null,
+    winnerId: null,
+    isActive: true,
+    wakeAt: null,
+    waitingOn: ['wes'],
+    actions: [DRAW, SKIP],
+    ...over,
+  });
+
+  const STATES = {
+    /** Your turn, three cards you can play, the seven of hearts on top. */
+    turn: () => cardsView({}),
+
+    /** Somebody played a two at you. The only way out is a two of your own. */
+    draw: () => cardsView({
+      top: '2S',
+      suit: 'S',
+      suitName: 'spades',
+      pendingDraw: 2,
+      hand: ['KS', '2H', '8C', '4D', 'JC'],
+      playable: ['2H'],
+      lastPlay: { playerId: 'ali', card: '2S', suit: null },
+      actions: [{ type: 'draw', label: 'Draw 2', kind: 'primary' }, SKIP],
+    }),
+
+    /** Not your turn. Nina is thinking, and you can read what Sam just did. */
+    waiting: () => cardsView({
+      turn: 'nina',
+      top: '9H',
+      suit: 'H',
+      suitName: 'hearts',
+      playable: [],
+      isActive: false,
+      waitingOn: ['nina'],
+      lastPlay: { playerId: 'sam', card: '9H', suit: null },
+      actions: [SKIP],
+    }),
+
+    /** Nina's eight has just named hearts, so the top card and the suit disagree. */
+    eight: () => cardsView({
+      top: '8C',
+      suit: 'H',
+      suitName: 'hearts',
+      discardCount: 12,
+      drawCount: 28,
+      hand: ['KS', '7D', '8D', '2H', 'JC'],
+      playable: ['7D', '8D', '2H'],
+      lastPlay: { playerId: 'nina', card: '8C', suit: 'H' },
+    }),
+
+    /** Nina went out. Everyone else is left holding what they were holding. */
+    win: () => cardsView({
+      phase: 'over',
+      turn: 'nina',
+      top: '3H',
+      suit: 'H',
+      suitName: 'hearts',
+      hand: ['KS', '7D', '2H'],
+      playable: [],
+      handCounts: { wes: 3, nina: 0, sam: 5, ali: 2 },
+      isActive: false,
+      winnerId: 'nina',
+      waitingOn: [],
+      lastPlay: { playerId: 'nina', card: '3H', suit: null },
+      actions: [],
+    }),
+
+    /** You drew a card. It rides above the hand for a moment so you can see what arrived. */
+    drew: () => cardsView({
+      hand: ['KS', '7D', '8C', '2H', 'JC', '4D'],
+      handCounts: { wes: 6, nina: 5, sam: 2, ali: 7 },
+      drew: '4D',
+      playable: ['7D', '8C', '2H'],
+      lastPlay: { playerId: 'ali', card: '7H', suit: null },
+      actions: [{ type: 'pass', label: 'Pass', kind: 'secondary' }, SKIP],
+    }),
+
+    /** Somebody who is not in the game. No hand, and nothing to do but read the table. */
+    watching: () => cardsView({
+      turn: 'nina',
+      hand: null,
+      playable: [],
+      isActive: false,
+      waitingOn: ['nina'],
+      lastPlay: { playerId: 'sam', card: '7H', suit: null },
+      actions: [],
+    }),
+
+    /** Twelve cards, which is as many as the fan ever has to hold on a phone. */
+    full: () => cardsView({
+      handCounts: { wes: 12, nina: 5, sam: 2, ali: 7 },
+      hand: ['AS', '4S', 'KS', '7D', '10D', '8C', '2H', '5H', '9H', 'QH', 'JC', '3C'],
+      playable: ['7D', '8C', '2H', '5H', '9H', 'QH'],
+    }),
+  };
+
+  const state = new URLSearchParams(location.search).get('state') || 'turn';
+
+  if (state === 'editor') {
+    render(html`<${Editor} content=${{}} config=${{}} onChange=${() => {}} />`, document.getElementById('app'));
+  } else {
+    const view = (STATES[state] || STATES.turn)();
+
+    /**
+     * The platform draws the buttons in view.actions under the screen, so the harness does
+     * the same. Kits never draw them (docs/KIT-CONTRACT.md, rule R3).
+     */
+    function Harness() {
+      const rest = view.actions.filter((action) => action.kind !== 'primary');
+      const primary = view.actions.filter((action) => action.kind === 'primary');
+      return html`
+        <${Fragment}>
+          <${Play} view=${view} me=${ME} players=${PLAYERS} send=${(type, payload) => console.log('send', type, payload)} now=${Date.now()} />
+          ${view.actions.length ? html`
+            <div class="actionbar">
+              <div class="btn-group row-wrap">
+                ${rest.map((action) => html`
+                  <button class=${action.kind === 'danger' ? 'btn btn-danger' : 'btn btn-secondary'} key=${action.label}>${action.label}</button>`)}
+                ${primary.map((action) => html`
+                  <button class="btn btn-primary btn-tall" key=${action.label}>${action.label}</button>`)}
+              </div>
+            </div>` : null}
+        <//>`;
+    }
+
+    render(html`<${Harness} />`, document.getElementById('app'));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+/* Classmates in the arcade look. This is the visual layer for every screen; rules and behaviour live in the components.
+   Tokens are the Parlor contract from themes/base.css, set here for the arcade so every shared component darkens with them. */
+@font-face { font-family: "Press Start 2P"; font-style: normal; font-weight: 400; font-display: swap; src: url("/gsb/fonts/press-start-2p-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "VT323"; font-style: normal; font-weight: 400; font-display: swap; src: url("/gsb/fonts/vt323-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "VT323"; font-style: normal; font-weight: 400; font-display: swap; src: url("/gsb/fonts/vt323-latin-ext.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+html[data-theme="arcade"] {
+  --bg: #0b0b1a; --surface: #16163a; --stage: #16163a;
+  --ink: #f5f5f5; --ink-2: #b9b7cf; --muted: #a9a6c4;
+  --rule: #2c2c52; --rule-strong: #5c5c7a;
+  --accent: #fec51d; --accent-ink: #0b0b1a; --link: #fec51d; --accent-soft: #24244a;
+  --good: #34d17a; --good-text: #34d17a; --good-soft: #10331f;
+  --bad: #ff6b6b; --bad-text: #ff6b6b; --bad-soft: #3a1015;
+  --warn: #fec51d; --warn-soft: #3a2f0a;
+  --font-display: "Press Start 2P", "Courier New", monospace;
+  --font-ui: "VT323", "Courier New", monospace;
+  --weight-display: 400; --weight-ui: 400; --weight-body: 400; --tracking-display: 0;
+  --radius-s: 0; --radius-m: 0; --radius-l: 0; --radius-pill: 0; --btn-radius: 0; --tile-radius: 0; --btn-edge: 4px;
+  --primary-bg: #fec51d; --primary-ink: #0b0b1a; --primary-edge: #a37d00;
+  --secondary-bg: #16163a; --secondary-ink: #fec51d; --secondary-border: #fec51d; --secondary-edge: #5c5c7a;
+  --shadow-soft: none;
+  --page-max: 920px;
+  --arcade-gold: #fec51d; --arcade-cardinal: #b1040e; --arcade-panel: #16163a; --arcade-panel-2: #1d1d4a; --arcade-line: #5c5c7a; --arcade-good: #34d17a; --arcade-miss: #c8451f; --arcade-bad: #ff6b6b; --arcade-ink: #f5f5f5; --arcade-ink-2: #b9b7cf; --arcade-bg: #0b0b1a; --arcade-gold-edge: #a37d00;
+  --font-arcade: var(--font-display); --font-pixel: var(--font-ui);
+  --pixel-bold: 1px 0 0 currentColor;
+  color-scheme: dark;
+}
+html { background: #05050f; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 20px; line-height: 1.25; overflow-x: hidden; }
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px); }
+.shell { max-width: var(--page-max); margin: auto; padding: 18px 20px calc(32px + var(--safe-bottom)); position: relative; z-index: 2; }
+
+/* ---------- type ---------- */
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; line-height: 1.5; text-transform: uppercase; }
+h1 { font-size: clamp(18px, 4.6vw, 26px); margin: 8px 0 16px; }
+h2 { font-size: 13px; margin: 0 0 12px; color: var(--arcade-gold); }
+h3 { font-size: 10px; margin: 0 0 10px; color: var(--ink); }
+p { margin: 0 0 16px; }
+.muted { color: var(--ink-2); }
+.small { font-size: 17px; }
+.eyebrow { font-family: var(--font-display); font-size: 8px; line-height: 1.7; letter-spacing: 0.06em; text-transform: uppercase; color: var(--arcade-gold); }
+.number { font-variant-numeric: tabular-nums; }
+strong { color: var(--arcade-gold); font-weight: 400; }
+
+/* ---------- chrome ---------- */
+.gsb-masthead { display: flex; align-items: center; justify-content: space-between; flex-direction: row; padding: 10px 0 18px; border-bottom: 3px solid var(--rule-strong); gap: 16px; }
+.brand { font-family: var(--font-display); font-size: 12px; line-height: 1.7; letter-spacing: 0; color: #fff; text-transform: uppercase; margin-top: 4px; max-width: 30ch; text-wrap: balance; }
+.sound-switch { margin: 12px 0 0; }
+.sound-switch .linkbtn { padding: 0; min-height: 32px; }
+.gsb-masthead button { font-size: 18px; }
+.account-link { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: 0 0 auto; max-width: 40%; min-width: 0; text-align: right; overflow-wrap: anywhere; line-height: 1.2; color: var(--arcade-gold); }
+.account-link-hint { color: var(--ink-2); font-size: 15px; white-space: nowrap; }
+.player-name, .scoretable td { overflow-wrap: anywhere; }
+.player-name { min-width: 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 3px solid var(--rule); margin-bottom: 18px; }
+.tabs button { background: transparent; border: 0; border-bottom: 4px solid transparent; border-radius: 0; padding: 14px 16px; min-height: 48px; color: var(--ink-2); font-family: var(--font-display); font-size: 9px; text-transform: uppercase; margin-bottom: -3px; }
+.tabs button[aria-current="page"] { border-color: var(--arcade-gold); color: var(--arcade-gold); }
+.footer { margin-top: 44px; padding-top: 18px; border-top: 3px dashed var(--rule); font-size: 16px; color: var(--muted); line-height: 1.35; }
+
+/* an invite on its way: share sheet where there is one, copy everywhere */
+.share-link { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; }
+.share-link .share-note { flex-basis: 100%; overflow-wrap: anywhere; }
+.players-heading { margin: 18px 0 6px; }
+.players[aria-live] li { animation: arrive 1.6s ease-out both; }
+@keyframes arrive { 0%, 40% { background: var(--warn-soft); box-shadow: inset 4px 0 0 var(--arcade-gold); } 100% { background: transparent; box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .players[aria-live] li { animation: none; } }
+/* ---------- surfaces and controls ---------- */
+.hero { padding: 16px 0 24px; max-width: 630px; }
+.hero p { max-width: 520px; font-size: 22px; color: var(--ink-2); line-height: 1.2; }
+.gsb-card { border: 3px solid var(--rule-strong); background: var(--surface); border-radius: 0; padding: 20px; }
+.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.panel-grid .gsb-card { display: flex; flex-direction: column; align-items: start; }
+.panel-grid .gsb-card p { flex: 1; }
+.sprint-entry { border-color: var(--arcade-gold); border-style: dashed; margin-bottom: 16px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.spread { justify-content: space-between; }
+.narrow { max-width: 470px; margin: 36px auto; }
+.btn { font-family: var(--font-display); font-size: 10px; text-transform: uppercase; letter-spacing: 0; min-height: 48px; padding: 12px 18px; cursor: pointer; border: 0; border-radius: 0; background: var(--arcade-gold); color: var(--arcade-bg); box-shadow: 0 4px 0 var(--arcade-gold-edge); line-height: 1.6; }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--arcade-gold-edge); }
+.btn.btn-secondary { background: var(--surface); color: var(--arcade-gold); border: 3px solid var(--arcade-gold); box-shadow: none; }
+.btn.btn-secondary:active { transform: none; }
+.linkbtn { background: transparent; border: 0; text-decoration: underline; text-underline-offset: 4px; color: var(--arcade-gold); padding: 8px 0; min-height: 44px; cursor: pointer; font-family: var(--font-ui); font-size: 20px; }
+.linkbtn.small { font-size: 18px; }
+.form-field { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 18px; font-family: var(--font-display); font-size: 9px; line-height: 1.7; text-transform: uppercase; color: var(--arcade-gold); }
+input, select { font: inherit; font-family: var(--font-ui); font-size: 22px; min-height: 48px; padding: 8px 12px; border: 3px solid var(--rule-strong); border-radius: 0; background: var(--surface); color: var(--ink); max-width: 100%; text-transform: none; }
+input { width: 100%; }
+input::placeholder { color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--arcade-gold); outline-offset: 3px; }
+button:disabled { cursor: default; opacity: 0.55; }
+.notice { padding: 12px 14px; background: var(--accent-soft); border: 2px solid var(--rule-strong); border-radius: 0; margin: 14px 0; line-height: 1.25; }
+.error { background: var(--bad-soft); border-color: var(--arcade-cardinal); color: var(--bad-text); }
+.success { background: var(--good-soft); border-color: var(--arcade-good); color: var(--good-text); }
+.divider { border: 0; border-top: 3px dashed var(--rule); margin: 26px 0; }
+.loading { padding: 64px 0; text-align: center; color: var(--arcade-gold); }
+.inline-form { display: flex; gap: 10px; align-items: end; }
+.inline-form .form-field { flex: 1; margin: 0; }
+.direction { max-width: 280px; }
+.empty { padding: 26px 0; color: var(--ink-2); }
+details summary { cursor: pointer; min-height: 44px; color: var(--arcade-gold); }
+.rules { line-height: 1.4; padding-left: 20px; }
+
+/* ---------- the question surface, shared by practice, rooms and the guest round ---------- */
+.question { width: 100%; max-width: 430px; margin: auto; }
+.prompt { font-size: 25px; line-height: 1.2; text-align: center; margin: 16px 0; }
+.portrait { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 0; background: var(--surface); margin: 0; }
+.portrait-failed { height: 100%; display: grid; place-content: center; text-align: center; border: 2px dashed var(--rule-strong); font-size: 16px; padding: 6px; }
+.portrait-failed .linkbtn { min-height: 0; padding: 4px 0; font-size: 16px; }
+.photo-loading { display: grid; place-content: center; color: var(--muted); font-size: 14px; width: 100%; height: 100%; }
+.meter { height: 6px; border-radius: 0; background: var(--rule); overflow: hidden; margin: 12px 0; }
+.meter span { display: block; background: var(--arcade-gold); height: 100%; transition: width 0.2s linear; }
+.clock { font-variant-numeric: tabular-nums; font-family: var(--font-display); font-size: 10px; color: var(--arcade-gold); }
+.status-line { min-height: 26px; margin: 12px 0; text-align: center; font-size: 19px; }
+.tilt-help { max-width: 410px; font-size: 16px; color: var(--ink-2); }
+.practice-head { max-width: 430px; margin: auto auto 6px; }
+.practice-head .meter { margin: 8px 0 0; }
+/* the names a learner keeps missing, folded under the practice head */
+.missing { margin-top: 10px; }
+.missing summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; color: var(--arcade-gold); font-size: 19px; }
+.missing-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.missing-list li { display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 6px 8px; background: var(--surface); border: 2px solid var(--rule-strong); }
+.missing-list li.leech { border-color: var(--arcade-cardinal); }
+.missing-list .mthumb { grid-row: 1 / span 2; width: 44px; height: 44px; overflow: hidden; background: var(--bg); box-shadow: 0 0 0 2px var(--arcade-gold); }
+.missing-list .mthumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.missing-list .mname { font-size: 19px; line-height: 1.1; overflow-wrap: anywhere; }
+.missing-list .mcount { font-size: 15px; }
+/* after an answer, the verdict and the Next button stay within reach at the bottom of the screen */
+.practice-feedback:not(:empty) { position: sticky; bottom: 0; z-index: 6; background: var(--bg); padding: 10px 0 calc(6px + var(--safe-bottom)); box-shadow: 0 -12px 16px var(--bg); }
+.practice-feedback .notice { margin: 0 0 10px; }
+.practice-controls h1 { margin: 0; }
+.practice-controls .form-field { margin: 0; }
+.practice-controls { margin-bottom: 6px; }
+.practice-save { max-width: 430px; margin: 16px auto; }
+.practice-feedback { min-height: 62px; margin-top: 14px; }
+.statline { font-size: 17px; line-height: 1.3; color: var(--ink-2); }
+
+/* ---------- rooms ---------- */
+.game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 26px; }
+.room-code { font-family: var(--font-ui); font-size: 56px; letter-spacing: 0.14em; margin: 10px 0; color: var(--arcade-gold); }
+.players { list-style: none; padding: 0; margin: 0; }
+.players li { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 2px solid var(--rule); }
+.players li.me { color: var(--arcade-gold); }
+.chat { margin-top: 24px; border: 3px solid var(--rule-strong); padding: 10px 12px; }
+.chat ol { list-style: none; padding: 0; max-height: 190px; overflow: auto; font-size: 18px; overflow-wrap: anywhere; }
+.chat li { margin: 8px 0; }
+.chat form { display: flex; gap: 6px; }
+.chat input { min-width: 0; }
+.chat button { padding: 8px 12px; }
+.winner { font-size: 42px; }
+
+/* ---------- scores ---------- */
+.scoretable { width: 100%; border-collapse: collapse; font-size: 19px; }
+.scoretable td, .scoretable th { text-align: left; padding: 10px 8px; border-bottom: 2px solid var(--rule); }
+.scoretable th { font-family: var(--font-display); font-size: 8px; text-transform: uppercase; color: var(--arcade-gold); }
+.scoretable td:first-child, .scoretable th:first-child { padding-left: 0; }
+.score-scroll { overflow-x: auto; max-height: 620px; }
+.score-scroll thead { position: sticky; top: 0; background: var(--bg); }
+.ranking-badge { display: inline-block; border-radius: 0; padding: 4px 8px; margin: 4px 0; font-family: var(--font-display); font-size: 7px; white-space: nowrap; text-transform: uppercase; }
+.ranking-badge.arjay { background: var(--arcade-gold); color: var(--arcade-bg); }
+.ranking-badge.foam { background: var(--arcade-cardinal); color: #fff; }
+.ranking-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 12px; }
+.scoretable .ranking-badge { display: block; width: fit-content; }
+.ranking-meta { display: block; }
+.my-standing { background: var(--accent-soft); }
+
+/* ---------- guest ---------- */
+.guest-invite { margin: 24px 0; }
+.guest-invite p { margin: 10px 0; }
+.guest-round h1 { font-size: 18px; }
+.guest-clock span { transition: none; }
+
+@media (max-width: 700px) {
+  .shell { padding: 12px 16px calc(28px + var(--safe-bottom)); }
+  .gsb-masthead { padding-bottom: 14px; }
+  .tabs { margin-bottom: 18px; }
+  .tabs button { padding: 14px 12px; }
+  .hero { padding: 8px 0 18px; }
+  .panel-grid, .game-layout { grid-template-columns: 1fr; }
+  .gsb-card { padding: 16px; }
+  .narrow { margin: 22px auto; }
+  .prompt { font-size: 23px; }
+  .game-rail { border-top: 3px dashed var(--rule); padding-top: 18px; }
+  .game-rail .players { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .scoretable { font-size: 17px; }
+  .footer { margin-top: 30px; }
+  .brand { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+select { height: 48px; }
+.gsb-card .muted { font-weight: 400; }
+.practice-controls h1 { font-size: 18px; }

@@ -1,0 +1,8 @@
+<!-- The Parlor mark: a rounded square of ink with a serif P in paper. One file, flat colours,
+     no gradients, so it reads at 16 px in a tab and at 180 px on a home screen. The two colours
+     are the editorial theme's --ink and --bg, written out because an icon has no stylesheet.
+     scripts/gen-icons.js renders this file to apple-touch-icon.png. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Parlor">
+  <rect width="180" height="180" rx="40" fill="#111111"/>
+  <text x="90" y="90" fill="#fbfaf6" font-family="ui-serif, 'New York', 'Iowan Old Style', Palatino, Georgia, 'Times New Roman', serif" font-size="126" font-weight="700" text-anchor="middle" dominant-baseline="central">P</text>
+</svg>

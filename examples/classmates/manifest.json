@@ -1,0 +1,9 @@
+{
+  "cohort": "my-group",
+  "people": [
+    { "id": "person-1", "name": "Alex Example", "photo": "photos/alex.jpg" },
+    { "id": "person-2", "name": "Blair Example", "photo": "photos/blair.jpg" },
+    { "id": "person-3", "name": "Casey Example", "photo": "photos/casey.jpg" },
+    { "id": "person-4", "name": "Devon Example", "photo": "photos/devon.jpg" }
+  ]
+}

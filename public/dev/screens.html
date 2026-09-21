@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor screens</title>
+  <!-- Any screen, any fixture, any theme, with no server running:
+         /dev/screens.html?screen=lobby&theme=playful
+       The screens are the real components; only the room client and the API are stubbed,
+       so what you see here is what a player sees. Use it with scripts/screenshot.js. -->
+  <link rel="stylesheet" href="../themes/base.css">
+  <link rel="stylesheet" href="../themes/editorial.css">
+  <link rel="stylesheet" href="../themes/playful.css">
+</head>
+<body>
+  <div id="screens" class="app"></div>
+
+  <script type="module">
+    import { html, render } from '../app/h.js';
+    import * as fixtures from './fixtures.js';
+
+    const params = new URLSearchParams(location.search);
+    const theme = params.get('theme');
+    if (theme === 'playful' || theme === 'editorial') document.documentElement.dataset.theme = theme;
+    const accent = params.get('accent');
+    if (accent) document.documentElement.style.setProperty('--accent', accent);
+
+    // The stub client: screens only ever call send(), and here it says what it would have sent.
+    const sent = [];
+    const send = (type, payload) => {
+      sent.push({ type, payload });
+      console.info('[screens] send', type, payload || '');
+      return Promise.resolve(null);
+    };
+    const onLeave = () => console.info('[screens] leave');
+
+    // Home and the game page ask the API for the catalog. Answer them from the fixtures so
+    // this page never needs a server, and leave everything else to fail the way it would.
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      const url = String(typeof input === 'string' ? input : input.url);
+      if (url.includes('/api/games/')) {
+        const slug = url.split('/api/games/')[1];
+        const game = fixtures.games.find((g) => g.slug === slug) || fixtures.games[0];
+        return json({ game: { ...game, config: {}, content: {} } });
+      }
+      if (url.includes('/api/games')) return json({ games: fixtures.games });
+      if (url.includes('/api/health')) return json({ ok: true, now: Date.now() });
+      return realFetch(input, init);
+    };
+    function json(body) {
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const room = {
+      meId: 'p1',
+      isHost: params.get('host') !== 'no',
+      status: params.get('status') || 'live',
+      send,
+      onLeave,
+    };
+
+    const SCREENS = {
+      home: async () => {
+        const { Home } = await import('../app/screens/Home.js');
+        return html`<${Home} />`;
+      },
+      game: async () => {
+        const { GamePage } = await import('../app/screens/GamePage.js');
+        return html`<${GamePage} slug=${params.get('slug') || 'flags-of-the-world'} />`;
+      },
+      lobby: async () => {
+        const { Lobby } = await import('../app/screens/Lobby.js');
+        return html`<${Lobby} ...${room} snapshot=${fixtures.lobby} />`;
+      },
+      play: async () => {
+        const { Play } = await import('../app/screens/Play.js');
+        // The phase 0 stand-in kit lives in kits/_template/, so its id does not name a
+        // folder to import from. Hand the chrome the template's own screen directly.
+        const { Play: KitScreen } = await import('../kits/_template/ui.js');
+        return html`<${Play} ...${room} snapshot=${fixtures.playing} kitScreen=${KitScreen} />`;
+      },
+      results: async () => {
+        const { Results } = await import('../app/screens/Results.js');
+        return html`<${Results} ...${room} snapshot=${fixtures.results} />`;
+      },
+      notfound: async () => {
+        const { NotFound } = await import('../app/screens/NotFound.js');
+        return html`<${NotFound} />`;
+      },
+    };
+
+    const name = params.get('screen') || 'lobby';
+    const build = SCREENS[name];
+    const mount = document.getElementById('screens');
+    if (!build) {
+      mount.textContent = `No screen called "${name}". Try: ${Object.keys(SCREENS).join(', ')}.`;
+    } else {
+      const { ToastRoot } = await import('../app/components/Toast.js');
+      render(html`${await build()}<${ToastRoot} />`, mount);
+    }
+  </script>
+</body>
+</html>

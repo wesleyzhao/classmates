@@ -1,0 +1,30 @@
+# After every production deployment (or by hand), play a round against the live site through the API.
+name: Production smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployment to test
+        required: true
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - name: Play a round
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || github.event.deployment_status.target_url }}
+        run: node scripts/deployment-smoke.js "$BASE_URL"

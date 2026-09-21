@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor board screens</title>
+  <!-- Every step of the board screen, drawn from fixed views, with no server and no room:
+         /dev/board.html?state=move&layout=wheel&theme=editorial
+       States: roll, move, pick, ask, judge, result, done, editor. Layouts: wheel, track.
+       The views below are the shape kit.js builds in view(), and the spaces and the legal
+       moves come from the real layouts and the real graph, so the board cannot flatter itself. -->
+  <link rel="stylesheet" href="../themes/base.css">
+  <link rel="stylesheet" href="../themes/editorial.css">
+  <link rel="stylesheet" href="../themes/playful.css">
+  <script>
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'playful' || theme === 'editorial') document.documentElement.dataset.theme = theme;
+  </script>
+</head>
+<body>
+<div class="app">
+  <main class="page page-wide" id="app"></main>
+</div>
+<script type="module">
+  import { html, render, Fragment } from '../app/h.js';
+  import { Play, Editor } from '../kits/board/ui.js';
+  import { reachable } from '../kits/board/graph.js';
+  import * as wheel from '../kits/board/layouts/wheel.js';
+  import * as track from '../kits/board/layouts/track.js';
+
+  const NOW = Date.now();
+  const ME = 'wes';
+
+  const PLAYERS = [
+    { id: 'wes', name: 'Wesley', avatar: '\u{1F98A}', seat: 0, connected: true, isHost: true, joinedAt: NOW, lastSeen: NOW },
+    { id: 'nina', name: 'Nina', avatar: '\u{1F419}', seat: 1, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+    { id: 'sam', name: 'Sam', avatar: '\u{1F43C}', seat: 2, connected: true, isHost: false, joinedAt: NOW, lastSeen: NOW },
+  ];
+
+  const WHEEL_CATS = [
+    { id: 'geo', name: 'Geography', color: '#2f6bff', emoji: '\u{1F30D}' },
+    { id: 'ent', name: 'Entertainment', color: '#ff3d9a', emoji: '\u{1F3AC}' },
+    { id: 'hist', name: 'History', color: '#ffc233', emoji: '\u{1F4DC}' },
+    { id: 'arts', name: 'Arts and Literature', color: '#8b5cf6', emoji: '\u{1F3A8}' },
+    { id: 'sci', name: 'Science and Nature', color: '#22c55e', emoji: '\u{1F52C}' },
+    { id: 'sport', name: 'Sports and Leisure', color: '#ff7a1a', emoji: '⚽' },
+  ];
+  const TRACK_CATS = [
+    { id: 'europe', name: 'Europe', color: '#2456f5', emoji: '\u{1F3F0}' },
+    { id: 'asia', name: 'Asia', color: '#ff5c69', emoji: '\u{1F3EF}' },
+    { id: 'africa', name: 'Africa', color: '#ffc93c', emoji: '\u{1F30D}' },
+    { id: 'americas', name: 'The Americas', color: '#2fc57b', emoji: '\u{1F5FD}' },
+  ];
+
+  const CARD = { id: 'q1', prompt: 'Which river runs through Paris?', choices: ['The Seine', 'The Loire', 'The Rhone', 'The Tiber'] };
+  const TRACK_LENGTH = 30;
+
+  /** The board a set of fixtures is standing on, and where everyone is standing on it. */
+  function boardOf(kind) {
+    if (kind === 'track') {
+      const layout = track.build({ length: TRACK_LENGTH, categories: TRACK_CATS.length });
+      return {
+        layout,
+        cats: TRACK_CATS,
+        win: 'reach',
+        wedgesToWin: null,
+        pos: { wes: 't11', nina: 't7', sam: 't16' },
+        wedges: { wes: [false, false, false, false], nina: [false, false, false, false], sam: [false, false, false, false] },
+      };
+    }
+    const layout = wheel.build();
+    return {
+      layout,
+      cats: WHEEL_CATS,
+      win: 'collect',
+      wedgesToWin: 6,
+      pos: { wes: 'r24', nina: 's2_3', sam: 'r22' },
+      wedges: {
+        wes: [true, false, true, false, false, false],
+        nina: [false, true, false, false, false, false],
+        sam: [true, true, false, false, true, false],
+      },
+    };
+  }
+
+  /** One view, the way kit.js builds it: the board, the turn, and what this viewer may do. */
+  function makeView(kind, over) {
+    const board = boardOf(kind);
+    const turn = {
+      seq: 7, playerId: ME, step: 'roll', stepAt: NOW - 4000, roll: null, options: null, lastMove: null,
+      landed: null, cat: null, forWedge: false, final: false, card: null, submitted: false,
+      typed: null, chosen: null, judgedBy: null, result: null, answer: null, correctIndex: null,
+      ...over.turn,
+    };
+    return {
+      phase: turn.step === 'done' ? 'over' : 'playing',
+      layout: kind, trackLength: TRACK_LENGTH, viewBox: board.layout.viewBox,
+      cats: board.cats, pos: board.pos, wedges: board.wedges,
+      wedgesToWin: board.wedgesToWin, win: board.win,
+      answerStyle: over.answerStyle || 'choices',
+      turnCount: 12, winnerId: over.winnerId || null,
+      turn,
+      isActive: turn.playerId === ME,
+      canPick: Boolean(over.canPick),
+      canJudge: Boolean(over.canJudge),
+      wakeAt: null,
+      waitingOn: over.waitingOn || [turn.playerId],
+      actions: over.actions || [],
+      wide: true,
+      _layout: board.layout,
+    };
+  }
+
+  /** The move that put the active player where they are, so the board can mark the space. */
+  function arrival(kind, who) {
+    const board = boardOf(kind);
+    const to = board.pos[who || ME];
+    const back = reachable(board.layout, to, 3)[0];
+    return { from: back.to, to, path: [...back.path].reverse() };
+  }
+
+  /** The spaces a roll of four reaches from where the active player is standing. */
+  function optionsFrom(board, from, roll) {
+    return reachable(board.layout, from, roll).map((option) => ({
+      to: option.to,
+      path: option.path,
+      type: board.layout.spaces[option.to].type,
+      cat: board.layout.spaces[option.to].cat,
+    }));
+  }
+
+  const STATES = {
+    roll: (kind) => makeView(kind, {
+      turn: { step: 'roll', roll: null },
+      actions: [{ type: 'roll', label: 'Roll', kind: 'primary' }],
+    }),
+    move: (kind) => {
+      const board = boardOf(kind);
+      return makeView(kind, {
+        turn: { step: 'move', roll: 4, options: optionsFrom(board, board.pos[ME], 4) },
+      });
+    },
+    pick: (kind) => makeView(kind, {
+      turn: { step: 'pick', roll: 4, lastMove: arrival(kind) },
+      canPick: true,
+    }),
+    ask: (kind) => makeView(kind, {
+      turn: { step: 'ask', roll: 4, cat: 0, forWedge: true, card: CARD, lastMove: arrival(kind) },
+    }),
+    judge: (kind) => makeView(kind, {
+      answerStyle: 'open',
+      turn: {
+        playerId: 'sam', step: 'judge', roll: 4, cat: 0, forWedge: true,
+        card: { id: 'q1', prompt: CARD.prompt }, typed: 'The Seine', submitted: true, answer: 'The Seine',
+        lastMove: arrival(kind, 'sam'),
+      },
+      canJudge: true,
+      waitingOn: ['wes', 'nina'],
+      actions: [
+        { type: 'judge', payload: { correct: true }, label: 'Right', kind: 'primary' },
+        { type: 'judge', payload: { correct: false }, label: 'Wrong', kind: 'secondary' },
+      ],
+    }),
+    result: (kind) => makeView(kind, {
+      turn: {
+        step: 'result', roll: 4, cat: 0, forWedge: true, card: CARD, chosen: 0, answer: 'The Seine', correctIndex: 0,
+        lastMove: arrival(kind),
+        result: { correct: true, wedge: kind === 'track' ? null : 0, win: false, answer: 'The Seine', correctIndex: 0, typed: null },
+      },
+      actions: [{ type: 'continue', label: 'Go again', kind: 'primary' }],
+    }),
+    done: (kind) => makeView(kind, {
+      turn: { playerId: 'sam', step: 'done', roll: 4 },
+      winnerId: 'sam',
+      waitingOn: [],
+    }),
+  };
+
+  const params = new URLSearchParams(location.search);
+  const state = params.get('state') || 'move';
+  const kind = params.get('layout') === 'track' ? 'track' : 'wheel';
+
+  if (state === 'editor') {
+    let content = {
+      layout: 'wheel',
+      trackLength: 30,
+      categories: WHEEL_CATS.map((cat) => ({ ...cat, decks: ['trivia'], filter: cat.id })),
+    };
+    const draw = () => render(
+      html`<${Editor} content=${content} config=${{}} onChange=${(next) => { content = next; draw(); }} />`,
+      document.getElementById('app'),
+    );
+    draw();
+  } else {
+    const view = (STATES[state] || STATES.move)(kind);
+
+    /**
+     * The platform draws the buttons in view.actions under the screen, so the harness does
+     * the same. Kits never draw them (docs/KIT-CONTRACT.md, rule R3).
+     */
+    function Harness() {
+      return html`
+        <${Fragment}>
+          <${Play} view=${view} me=${ME} players=${PLAYERS} send=${(type, payload) => console.log('send', type, payload)} now=${Date.now()} />
+          ${view.actions.length ? html`
+            <div class="actionbar">
+              ${view.actions.map((action) => html`
+                <button class=${action.kind === 'primary' ? 'btn btn-primary btn-block btn-tall' : 'btn btn-secondary btn-block'} key=${action.label}>${action.label}</button>`)}
+            </div>` : null}
+        <//>`;
+    }
+
+    render(html`<${Harness} />`, document.getElementById('app'));
+  }
+</script>
+</body>
+</html>

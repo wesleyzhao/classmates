@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor gallery</title>
+  <!-- Every component in both themes on one page, for screenshot review. Add ?theme=playful to switch.
+       This page is static on purpose: it must show the CSS alone, without the app running. -->
+  <link rel="stylesheet" href="../themes/base.css">
+  <link rel="stylesheet" href="../themes/editorial.css">
+  <link rel="stylesheet" href="../themes/playful.css">
+  <style>
+    .gallery-section { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+    .gallery-label { font-size: 12px; color: var(--muted); letter-spacing: 0; }
+    .page > .actionbar { position: static; margin: 0; }  /* the gallery is a scroll of samples, not a screen */
+  </style>
+  <script>
+    const theme = new URLSearchParams(location.search).get('theme');
+    if (theme === 'playful' || theme === 'editorial') document.documentElement.dataset.theme = theme;
+  </script>
+</head>
+<body>
+<div class="app">
+<main class="page">
+
+  <div class="masthead">
+    <div class="wordmark">Parlor</div>
+    <p class="lede">Small games for the people in the room. Open a game, share the link, play on your phones.</p>
+  </div>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Buttons</div>
+    <div class="btn-group">
+      <button class="btn btn-primary">Start game</button>
+      <button class="btn btn-secondary">Copy code</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost">Leave</button>
+      <button class="btn btn-danger btn-sm">Remove</button>
+      <button class="btn btn-accent btn-sm">Share link</button>
+      <button class="btn btn-secondary btn-icon" aria-label="Chat">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"></path></svg>
+      </button>
+      <button class="btn btn-primary" disabled>Waiting</button>
+    </div>
+    <button class="btn btn-primary btn-block btn-tall">Next card</button>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Inputs</div>
+    <div class="row">
+      <input class="input input-code" placeholder="ABCD" aria-label="Room code">
+      <button class="btn btn-primary btn-tall">Join</button>
+    </div>
+    <div class="field">
+      <label class="field-label" for="name">Your name</label>
+      <input class="input" id="name" value="Wesley">
+      <div class="field-help">Friends see it at the table.</div>
+    </div>
+    <div class="field is-invalid">
+      <label class="field-label" for="bad">Seconds per card</label>
+      <input class="input" id="bad" value="200">
+      <div class="field-error">Use 90 or less.</div>
+    </div>
+    <div class="segmented" role="group" aria-label="How people answer">
+      <button aria-pressed="true">Tap a choice</button><button aria-pressed="false">Type it</button><button aria-pressed="false">Both</button>
+    </div>
+    <button class="switch" role="switch" aria-checked="true"><span class="switch-track"></span><span>Move on automatically</span></button>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Room code, players, tags</div>
+    <div class="stack center" style="align-items: center;">
+      <div class="muted">Your room</div>
+      <div class="code-text" style="font-size: 86px;">MKRT</div>
+    </div>
+    <div class="section-head"><h3>At the table</h3><span class="num small ink-2">3 of 12</span></div>
+    <ul class="list">
+      <li class="list-row"><span class="avatar">🦊</span><span class="strong">Wesley</span><span class="end"><span class="tag">host</span></span></li>
+      <li class="list-row"><span class="avatar">🐙</span><span class="strong">Nina</span></li>
+      <li class="list-row"><span class="avatar is-away">🐼</span><span class="strong">Sam</span><span class="end">gone quiet</span></li>
+    </ul>
+    <div class="row row-wrap">
+      <span class="chip"><span class="chip-dot" style="background:#2f6bff"></span>Geography</span>
+      <span class="chip is-active"><span class="chip-dot" style="background:#22c55e"></span>Science HQ</span>
+      <span class="chip chip-lg">🦊 <span class="num">320</span></span>
+      <span class="tag tag-accent">new</span>
+    </div>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">A quiz card</div>
+    <div class="topbar">
+      <span class="num ink-2 small">Card 3 of 10</span>
+      <div class="timer-ring">
+        <svg viewBox="0 0 44 44" width="44" height="44"><circle class="track" cx="22" cy="22" r="19" fill="none" stroke-width="3"></circle><circle class="arc" cx="22" cy="22" r="19" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="47.8" transform="rotate(-90 22 22)"></circle></svg>
+        <span class="label num">9</span>
+      </div>
+    </div>
+    <div class="stage"><span class="stage-emoji">🇵🇹</span></div>
+    <h2 class="center">Which country's flag is this?</h2>
+    <div class="choices">
+      <button class="choice">Spain</button>
+      <button class="choice is-picked">Portugal</button>
+      <button class="choice">Italy</button>
+      <button class="choice">Greece</button>
+    </div>
+    <div class="choices">
+      <button class="choice is-right" disabled>Portugal</button>
+      <button class="choice is-wrong" disabled>Spain</button>
+      <button class="choice is-dim" disabled>Italy</button>
+      <button class="choice is-dim" disabled>Greece</button>
+    </div>
+    <div class="timer-bar"><i style="width: 62%"></i></div>
+    <div class="steps"><i class="is-done"></i><i></i><i></i><i></i></div>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Standings</div>
+    <div class="section-head"><h3>Standings</h3><span class="num small ink-2">after 3 cards</span></div>
+    <ul class="list standings">
+      <li class="list-row"><span class="rank num">1</span><span class="avatar avatar-sm">🦊</span><span class="strong grow">You</span><span class="delta is-up num">+180</span><span class="score num">500</span></li>
+      <li class="list-row"><span class="rank num">2</span><span class="avatar avatar-sm">🐼</span><span class="strong grow">Sam</span><span class="delta is-up num">+140</span><span class="score num">350</span></li>
+      <li class="list-row"><span class="rank num">3</span><span class="avatar avatar-sm">🐙</span><span class="strong grow">Nina</span><span class="delta">Spain</span><span class="score num">290</span></li>
+    </ul>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Status, notices, empty state</div>
+    <div class="row"><span class="pill-status">Reconnecting</span><span class="toast">Link copied</span></div>
+    <div class="notice">Sync is not set up yet, so rooms live in this browser only.</div>
+    <div class="notice notice-bad">Can't reach the room. Check your signal, then try again.</div>
+    <div class="empty">Nobody has joined yet. Share the link and they will show up here.</div>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-label">Chat</div>
+    <div class="chat surface" style="padding: 16px;">
+      <div class="chat-log" style="max-height: 200px;">
+        <div class="chat-msg"><span class="avatar avatar-sm">🐙</span><div><div class="who">Nina</div><div class="text">Is this the one where Sam always wins?</div></div></div>
+        <div class="chat-msg"><span class="avatar avatar-sm">🐼</span><div><div class="who">Sam</div><div class="text">Only the Europe one. Ask me about Oceania.</div></div></div>
+        <div class="chat-system">Sam joined</div>
+      </div>
+      <div class="chat-compose"><input class="input" placeholder="Say something" aria-label="Message"><button class="btn btn-primary btn-icon" aria-label="Send"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></button></div>
+    </div>
+    <div class="reactions"><button class="reaction-btn">👏</button><button class="reaction-btn">😂</button><button class="reaction-btn">😮</button><button class="reaction-btn">🔥</button></div>
+  </section>
+
+  <div class="actionbar">
+    <button class="btn btn-primary btn-block btn-tall">Start game</button>
+    <div class="actionbar-note">You can start with anyone who is here. Others can still join.</div>
+  </div>
+
+</main>
+</div>
+</body>
+</html>

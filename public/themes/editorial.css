@@ -1,0 +1,51 @@
+/* editorial.css: the Sunday-paper look. Warm white paper, ink, a serif for anything that matters,
+   pill buttons, hairlines that separate real sections. Every value here is a token from base.css;
+   the few rules below are the theme's signatures. Applied with <html data-theme="editorial">. */
+
+html[data-theme="editorial"] {
+  --bg: #fbfaf6;
+  --surface: #ffffff;
+  --stage: #ffffff;
+  --ink: #111111;
+  --ink-2: #5c5852;
+  --muted: #706b62;
+  --rule: #e6e1d6;
+  --rule-strong: #cfc8b9;
+  --accent: #2456f5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8edfe;
+  --good: #1f7a4d;
+  --good-text: #1f7a4d;
+  --good-soft: #e3f2ea;
+  --bad: #c8322b;
+  --bad-text: #c8322b;
+  --bad-soft: #fbe6e4;
+  --warn: #e0a81a;
+  --warn-soft: #fff3cc;
+
+  --font-display: ui-serif, "New York", "Iowan Old Style", "Palatino", Georgia, serif;
+  --font-ui: system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --weight-display: 700;
+  --weight-ui: 600;
+  --tracking-display: -0.015em;
+
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --btn-radius: 999px;
+  --tile-radius: 999px;
+  --btn-edge: 0px;
+  --primary-bg: #111111;
+  --primary-ink: #fbfaf6;
+  --primary-edge: #000000;
+  --secondary-bg: #ffffff;
+  --secondary-ink: #111111;
+  --secondary-border: #cfc8b9;
+  --secondary-edge: #cfc8b9;
+}
+
+/* Signatures: the prompt is set in the serif, and headings sit on an ink rule. */
+html[data-theme="editorial"] .stage-text { font-family: var(--font-display); }
+html[data-theme="editorial"] .choice { font-family: var(--font-ui); }
+html[data-theme="editorial"] .btn-primary:hover:not(:disabled) { background: #000000; }
+html[data-theme="editorial"] .btn-secondary:hover:not(:disabled) { border-color: var(--ink); }

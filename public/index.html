@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- The app shell. It loads the two theme sheets and one module, and does nothing else:
+     every screen is rendered by public/app/main.js into #app. The theme attribute starts
+     at editorial because Home is editorial; a room swaps it when its game asks for another.
+     Keep this file small. Anything that needs logic belongs in app/. -->
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Parlor</title>
+  <meta name="description" content="Small games for the people in the room. Open a game, share the link, play on your phones.">
+  <meta name="theme-color" content="#fbfaf6">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Parlor">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/themes/base.css">
+  <link rel="stylesheet" href="/themes/editorial.css">
+  <link rel="stylesheet" href="/themes/playful.css">
+</head>
+<body>
+  <div id="app"></div>
+  <noscript><p style="padding: 24px">Parlor needs JavaScript to run. Turn it on and reload the page.</p></noscript>
+  <script type="module" src="/app/main.js"></script>
+</body>
+</html>

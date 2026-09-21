@@ -1,0 +1,259 @@
+/* Speed round in the arcade look: a dark cabinet, pixel type, and a classmate you flick into a corner.
+   Sizes scale with --u so the four answer targets fit a 320 by 568 phone and reach full size on a 390 by 844 one.
+   The answer targets keep fixed boxes so their rectangles never move between questions. */
+
+/* the two body frames, for the speed cabinet and for every other arena */
+.sprint-stage, .arena-host { --body-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 12' shape-rendering='crispEdges'%3E%3Crect x='4' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='13' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='3' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='13' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23f5f5f5'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23f5f5f5'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='5' width='1' height='1' fill='%23f5f5f5'/%3E%3Crect x='13' y='5' width='1' height='1' fill='%23f5f5f5'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='10' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='6' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='10' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='5' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='6' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='4' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='5' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='6' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='10' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='3' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='5' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='6' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='9' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='3' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='5' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='6' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='9' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='10' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%232e2d29'/%3E%3C/svg%3E"); --body-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 12' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='1' y='0' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='4' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='0' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='14' y='0' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='15' y='0' width='1' height='1' fill='%23FEC51D'/%3E%3Crect x='0' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='14' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='15' y='1' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='12' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='4' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='11' y='5' width='1' height='1' fill='%23B1040E'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='10' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='6' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='10' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='7' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='3' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='5' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='12' y='8' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='2' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='3' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='4' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='12' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='13' y='9' width='1' height='1' fill='%233b5f8f'/%3E%3Crect x='1' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='2' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='3' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='13' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='14' y='10' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='1' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='2' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='3' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='4' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='13' y='11' width='1' height='1' fill='%232e2d29'/%3E%3Crect x='14' y='11' width='1' height='1' fill='%232e2d29'/%3E%3C/svg%3E"); }
+
+/* ---------- the cabinet ---------- */
+.sprint-stage {
+  --font-arcade: "Press Start 2P", "Courier New", monospace;
+  --font-pixel: "VT323", "Courier New", monospace;
+  --arcade-bg: #0b0b1a; --arcade-panel: #16163a; --arcade-panel-2: #1d1d4a; --arcade-line: #5c5c7a;
+  --arcade-gold: #fec51d; --arcade-gold-edge: #a37d00; --arcade-cardinal: #b1040e; --arcade-good: #34d17a; --arcade-miss: #c8451f; --arcade-bad: #ff6b6b;
+  --arcade-ink: #f5f5f5; --arcade-ink-2: #b9b7cf;
+  --pixel-bold: 1px 0 0 currentColor;
+  --u: min(1px, calc(100svh / 800), calc(100vw / 332));
+  position: fixed; inset: 0; z-index: 20; width: auto; max-width: none; margin: 0; overflow: auto; -webkit-overflow-scrolling: touch;
+  display: grid; justify-items: center; align-items: start;
+  background: #05050f; color: var(--arcade-ink); font-family: var(--font-arcade); font-size: 11px; line-height: 1.7;
+}
+.sprint-play:focus, .sprint-result h1:focus { outline: none; }
+.sprint-stage .cab { position: relative; width: min(100vw, 430px); background: var(--arcade-bg); display: flex; flex-direction: column; }
+.sprint-stage .cab::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px); }
+.sprint-stage .attract { min-height: 100svh; gap: 14px; padding: calc(24px + var(--safe-top)) 20px calc(28px + var(--safe-bottom)); }
+.sprint-stage .eyebrow, .sprint-stage .title, .sprint-stage .lbl, .sprint-stage .btn, .sprint-stage .form-field, .sprint-stage .sprint-records h2, .sprint-stage .sprint-records h3, .sprint-stage .tl { font-family: var(--font-arcade); text-transform: uppercase; letter-spacing: 0; }
+.sprint-stage .eyebrow { font-size: 9px; color: var(--arcade-gold); margin: 0; }
+.sprint-stage .title { font-size: 18px; line-height: 1.5; color: #fff; margin: 0; font-weight: 400; }
+.sprint-stage p { font-family: var(--font-pixel); font-size: 22px; line-height: 1.1; margin: 0; text-transform: none; color: var(--arcade-ink); }
+.sprint-stage p.small, .sprint-stage span.small { font-family: var(--font-pixel); font-size: 18px; line-height: 1.1; color: var(--arcade-ink-2); text-transform: none; }
+.sprint-stage p strong { color: var(--arcade-gold); font-weight: 400; }
+.sprint-stage .form-field { display: flex; flex-direction: column; gap: 8px; font-size: 9px; color: var(--arcade-gold); }
+.sprint-stage select { font-family: var(--font-pixel); font-size: 22px; height: 48px; padding: 0 10px; background: var(--arcade-panel); color: #fff; border: 3px solid var(--arcade-line); border-radius: 0; text-transform: none; max-width: 100%; }
+.sprint-stage .btn { font-size: 10px; background: var(--arcade-gold); color: var(--arcade-bg); border: 0; border-radius: 0; min-height: 48px; padding: 12px 18px; box-shadow: 0 4px 0 var(--arcade-gold-edge); line-height: 1.6; }
+/* Reused primary/secondary buttons must change both colors together at screen boundaries. */
+.sprint-stage .btn { transition-property: transform, box-shadow, opacity; }
+.sprint-stage .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--arcade-gold-edge); }
+.sprint-stage .btn:disabled { opacity: 0.5; box-shadow: none; }
+.sprint-stage .linkbtn { font-family: var(--font-pixel); font-size: 20px; color: var(--arcade-gold); background: none; border: 0; text-decoration: underline; min-height: 44px; padding: 0 8px; text-transform: none; }
+.sprint-stage :focus-visible { outline: 3px solid var(--arcade-gold); outline-offset: 2px; }
+.sprint-stage .notice.error { font-family: var(--font-pixel); font-size: 20px; border: 3px solid var(--arcade-cardinal); background: var(--arcade-panel); color: var(--arcade-bad); padding: 10px 12px; }
+.sprint-stage .row { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+.sprint-result .big { font-size: 26px; }
+.sprint-result .missed { font-size: 20px; color: var(--arcade-ink-2); }
+.sprint-result .missed .lbl { color: var(--arcade-bad); font-size: 9px; margin-right: 10px; }
+/* the round length toggle and the review of every pairing */
+.sprint-stage .seg { display: inline-flex; border: 3px solid var(--arcade-line); }
+.sprint-stage .segbtn { font-family: var(--font-pixel); font-size: 20px; min-height: 44px; padding: 0 14px; background: var(--arcade-panel); color: var(--arcade-ink); border: 0; text-transform: none; }
+.sprint-stage .segbtn + .segbtn { border-left: 3px solid var(--arcade-line); }
+.sprint-stage .segbtn[aria-pressed="true"] { background: var(--arcade-gold); color: var(--arcade-bg); }
+.sprint-stage .segbtn:disabled { opacity: 0.6; }
+.sprint-result .review h2 { font-family: var(--font-arcade); font-size: 10px; text-transform: uppercase; margin: 14px 0 8px; color: var(--arcade-gold); font-weight: 400; }
+.sprint-result .review h2.no { color: var(--arcade-bad); }
+.sprint-result .pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.sprint-result .pair { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; background: var(--arcade-panel); border: 2px solid var(--arcade-line); text-align: center; }
+.sprint-result .pair.ok { border-color: var(--arcade-good); }
+.sprint-result .pair.no { border-color: var(--arcade-cardinal); }
+.sprint-stage .pthumb { width: 84px; height: 84px; background: var(--arcade-bg); border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); overflow: hidden; flex: 0 0 auto; }
+.sprint-stage .pthumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sprint-stage .pthumb.small { width: 36px; height: 36px; box-shadow: 0 0 0 2px var(--arcade-cardinal); display: inline-block; vertical-align: middle; }
+.sprint-stage .pname { font-family: var(--font-pixel); font-size: 20px; line-height: 1; overflow-wrap: anywhere; text-shadow: var(--pixel-bold); }
+.sprint-stage .psaid { font-family: var(--font-pixel); font-size: 16px; line-height: 1.1; color: var(--arcade-bad); overflow-wrap: anywhere; }
+.sprint-stage .pgot { font-family: var(--font-pixel); font-size: 16px; line-height: 1.1; color: var(--arcade-good); }
+/* the peek: a tapped chip shows that pairing large over the bottom of the arena */
+:is(.sprint-play, .arena-host) .peek { position: absolute; left: 50%; bottom: calc(6 * var(--u)); translate: -50% 0; z-index: 36; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 12px); padding: 10px 14px; background: var(--arcade-panel); border: 3px solid var(--arcade-good); color: var(--arcade-ink); font: inherit; text-align: left; text-transform: none; cursor: pointer; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); animation: sprint-slide 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+:is(.sprint-play, .arena-host) .peek.no { border-color: var(--arcade-cardinal); }
+:is(.sprint-play, .arena-host) .peek .pthumb { width: calc(96 * var(--u)); height: calc(96 * var(--u)); }
+:is(.sprint-play, .arena-host) .peek .ptext { display: flex; flex-direction: column; gap: 6px; min-width: calc(120 * var(--u)); max-width: calc(200 * var(--u)); }
+:is(.sprint-play, .arena-host) .peek .pname, :is(.sprint-play, .arena-host) .peek .psaid { overflow-wrap: normal; }
+:is(.sprint-play, .arena-host) .peek .pname { font-size: calc(26 * var(--u)); }
+:is(.sprint-play, .arena-host) .peek .psaid, :is(.sprint-play, .arena-host) .peek .pgot { font-size: calc(18 * var(--u)); }
+/* challenges: the code, who is in, and the standings */
+.sprint-stage .challenge-code { font-family: var(--font-pixel); font-size: 36px; letter-spacing: 0.14em; color: var(--arcade-gold); vertical-align: -2px; }
+.sprint-stage .lbl-heading { font-family: var(--font-arcade); font-size: 10px; text-transform: uppercase; color: var(--arcade-gold); margin: 6px 0 0; font-weight: 400; }
+.sprint-stage :is(.challenge-standings, .seats, .versus) { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sprint-stage :is(.challenge-standings, .seats, .versus) li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--arcade-panel); border: 2px solid var(--arcade-line); font-family: var(--font-pixel); font-size: 20px; line-height: 1.1; text-transform: none; }
+.sprint-stage :is(.challenge-standings, .seats, .versus) li.me { border-color: var(--arcade-gold); }
+.sprint-stage .seats li { grid-template-columns: minmax(0, 1fr) auto; }
+.sprint-stage .seats li .how { color: var(--arcade-bad); }
+.sprint-stage .seats li.ready .how { color: var(--arcade-good); }
+.sprint-stage .versus li.win { background: #2a2408; }
+.sprint-stage :is(.challenge-standings, .versus) .rank { color: var(--arcade-gold); font-family: var(--font-arcade); font-size: 10px; }
+.sprint-stage :is(.challenge-standings, .seats, .versus) .who { overflow-wrap: anywhere; }
+.sprint-stage :is(.challenge-standings, .seats, .versus) .how { color: var(--arcade-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 17px; }
+.sprint-stage .code-form { display: flex; flex-direction: column; gap: 8px; }
+.sprint-stage .code-form .lbl { font-size: 9px; color: var(--arcade-gold); }
+.sprint-stage input { font-family: var(--font-pixel); font-size: 22px; height: 48px; padding: 0 10px; background: var(--arcade-panel); color: #fff; border: 3px solid var(--arcade-line); border-radius: 0; text-transform: uppercase; width: 9ch; letter-spacing: 0.08em; }
+.sprint-stage .btn.btn-secondary { background: var(--arcade-panel); color: var(--arcade-gold); border: 3px solid var(--arcade-gold); box-shadow: none; }
+.sprint-stage .btn.btn-secondary:active { transform: none; }
+.sprint-records { border-top: 3px dashed var(--arcade-line); margin-top: 8px; padding-top: 16px; overflow-wrap: anywhere; }
+.sprint-records h2 { font-size: 12px; color: var(--arcade-gold); margin: 0 0 10px; font-weight: 400; }
+.sprint-records h3 { font-size: 10px; margin: 14px 0 6px; font-weight: 400; color: var(--arcade-ink); }
+.sprint-records li, .sprint-records summary { font-family: var(--font-pixel); font-size: 20px; line-height: 1.15; text-transform: none; }
+.sprint-records summary { cursor: pointer; min-height: 44px; color: var(--arcade-gold); }
+.sprint-records ol { margin: 0; padding-left: 24px; }
+.sprint-records li { margin-bottom: 6px; }
+
+/* ---------- play ---------- */
+:is(.sprint-play, .arena-host) .cab { height: 100svh; overflow: hidden; gap: calc(8 * var(--u)); padding: calc(10 * var(--u) + var(--safe-top)) calc(12 * var(--u)) calc(8 * var(--u) + var(--safe-bottom)); }
+.sprint-hud { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex: 0 0 auto; margin: 0; font-size: calc(10 * var(--u)); line-height: 1.6; font-variant-numeric: tabular-nums; }
+.sprint-hud .col { display: flex; flex-direction: column; }
+.sprint-hud .lbl { color: var(--arcade-gold); }
+.sprint-hud .val { color: #fff; }
+.sprint-hud .clock { font-size: inherit; min-width: 5ch; text-align: left; }
+.sprint-hud .sprint-leave { font-size: calc(18 * var(--u)); min-height: 0; padding: 0; align-self: center; }
+:is(.sprint-play, .arena-host) .arena { position: relative; flex: 1 1 auto; min-height: 0; }
+:is(.sprint-play, .arena-host) .choices { display: block; position: absolute; inset: 0; margin: 0; gap: 0; }
+/* the four corner targets keep fixed boxes: a name plate or a framed face with a faint body under it */
+:is(.sprint-play, .arena-host) .answer { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; width: calc(150 * var(--u)); height: calc(216 * var(--u)); min-height: 0; min-width: 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--arcade-ink); font: inherit; overflow: visible; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+:is(.sprint-play, .arena-host) .answer[data-k="0"] { left: 0; top: 0; }
+:is(.sprint-play, .arena-host) .answer[data-k="1"] { right: 0; top: 0; }
+:is(.sprint-play, .arena-host) .answer[data-k="2"] { left: 0; bottom: 0; }
+:is(.sprint-play, .arena-host) .answer[data-k="3"] { right: 0; bottom: 0; }
+:is(.sprint-play, .arena-host) .answer::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+:is(.sprint-play, .arena-host) .answer[data-flash="right"]::after { background: var(--arcade-good); animation: sprint-flash 560ms ease-out forwards; }
+:is(.sprint-play, .arena-host) .answer[data-flash="wrong"]::after { background: var(--arcade-miss); animation: sprint-flash 700ms ease-out forwards; }
+:is(.sprint-play, .arena-host) .plate { position: relative; z-index: 1; display: grid; place-items: center; width: calc(150 * var(--u)); height: calc(126 * var(--u)); padding: calc(8 * var(--u)); border: 3px dashed var(--arcade-line); background: var(--arcade-panel); font-family: var(--font-pixel); font-size: calc(30 * var(--u)); line-height: 0.95; text-align: center; text-shadow: var(--pixel-bold); text-transform: none; overflow: hidden; overflow-wrap: anywhere; transition: border-color 100ms, background 100ms; }
+:is(.sprint-play, .arena-host) .plate.long { font-size: calc(24 * var(--u)); }
+:is(.sprint-play, .arena-host) .plate .pname { display: block; max-width: 100%; }
+:is(.sprint-play, .arena-host) .key { position: absolute; left: 4px; top: 3px; font-family: var(--font-arcade); font-size: calc(7 * var(--u)); color: var(--arcade-line); font-weight: 400; z-index: 2; }
+:is(.sprint-play, .arena-host) .slot { position: relative; z-index: 1; display: block; flex: 0 0 auto; width: var(--slot); height: var(--slot); border: 3px dashed var(--arcade-gold); background: rgba(254, 197, 29, 0.08); overflow: hidden; }
+:is(.sprint-play, .arena-host) .slot.filled { border: 4px solid var(--arcade-bg); box-shadow: 0 0 0 4px var(--arcade-gold); background: var(--arcade-panel); }
+:is(.sprint-play, .arena-host) .slot img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 0; margin: 0; background: transparent; -webkit-user-drag: none; }
+:is(.sprint-play, .arena-host) .answer { --slot: calc(150 * var(--u)); }
+:is(.sprint-play, .arena-host) .arena :is(.piece, .dealt, .deck) { --slot: calc(168 * var(--u)); }
+:is(.sprint-play, .arena-host) .arena[data-dir="name"] :is(.piece, .dealt, .deck) { --slot: calc(120 * var(--u)); }
+:is(.sprint-play, .arena-host) .bod { display: block; flex: 0 0 auto; width: var(--bw); height: calc(var(--bw) * 12 / 16); margin-top: -3px; background: var(--body-down) center / 100% 100% no-repeat; image-rendering: pixelated; }
+:is(.sprint-play, .arena-host) .bod.ghost { opacity: 0.34; transition: opacity 120ms; }
+:is(.sprint-play, .arena-host) .answer .bod { --bw: calc(96 * var(--u)); }
+:is(.sprint-play, .arena-host) .arena :is(.piece, .dealt, .deck) .bod { --bw: calc(128 * var(--u)); }
+:is(.sprint-play, .arena-host) .answer[data-state="target"] .plate { border-color: var(--arcade-gold); border-style: solid; background: var(--arcade-panel-2); }
+:is(.sprint-play, .arena-host) .answer[data-state="target"] .slot.filled { box-shadow: 0 0 0 4px #fff; }
+:is(.sprint-play, .arena-host) .answer[data-state="target"] .bod.ghost { opacity: 0.85; }
+:is(.sprint-play, .arena-host) .figure { display: flex; flex-direction: column; align-items: center; position: relative; }
+/* the piece: centred with translate, so transform is free for the drag */
+:is(.sprint-play, .arena-host) .piece { position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 5; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; will-change: transform; }
+:is(.sprint-play, .arena-host) .piece.is-dragging { cursor: grabbing; }
+:is(.sprint-play, .arena-host) .piece.is-back { transition: transform 280ms cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+:is(.sprint-play, .arena-host) .piece.is-enter { animation: sprint-enter 260ms cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+:is(.sprint-play, .arena-host) .piece .bod { animation: sprint-bob 700ms steps(2) infinite; }
+:is(.sprint-play, .arena-host) .tag { display: inline-flex; flex-direction: column; align-items: center; white-space: normal; border-radius: 0; min-height: 0; gap: calc(5 * var(--u)); background: #fff; color: var(--arcade-bg); border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); padding: calc(6 * var(--u)) calc(10 * var(--u)) calc(7 * var(--u)); margin: 0; font-weight: 400; font-family: var(--font-pixel); letter-spacing: 0; line-height: 1; }
+:is(.sprint-play, .arena-host) .tag .tl { font-size: calc(8 * var(--u)); line-height: 1; color: var(--arcade-cardinal); min-height: calc(8 * var(--u)); }
+:is(.sprint-play, .arena-host) .tag .tn { font-family: var(--font-pixel); font-size: calc(30 * var(--u)); line-height: 0.95; text-shadow: var(--pixel-bold); text-transform: none; text-align: center; overflow-wrap: anywhere; min-height: calc(57 * var(--u)); display: flex; align-items: center; justify-content: center; }
+:is(.sprint-play, .arena-host) .tag.chest { position: absolute; left: 50%; top: calc(var(--slot) + 10 * var(--u)); translate: -50% 0; width: max-content; max-width: calc(236 * var(--u)); z-index: 2; }
+:is(.sprint-play, .arena-host) .deck .tag .tn { min-width: calc(120 * var(--u)); }
+/* the stack behind the piece is the next two questions, in silhouette */
+:is(.sprint-play, .arena-host) .deck { position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 4; pointer-events: none; }
+:is(.sprint-play, .arena-host) .deck .layer { position: absolute; left: 0; top: 0; translate: -50% -50%; }
+:is(.sprint-play, .arena-host) .deck .layer.l1 { transform: translate(10px, -10px); opacity: 0.55; }
+:is(.sprint-play, .arena-host) .deck .layer.l2 { transform: translate(20px, -20px); opacity: 0.3; }
+:is(.sprint-play, .arena-host) .silhouette { filter: grayscale(1) brightness(0.3); }
+/* the fx layer: the dealt piece and the floating label, outside the rendered question */
+:is(.sprint-play, .arena-host) .fx { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+:is(.sprint-play, .arena-host) .dealt { position: absolute; z-index: 34; transition: transform 240ms cubic-bezier(0.3, 0.6, 0.3, 1); }
+:is(.sprint-play, .arena-host) .dealt.landed-ok { animation: sprint-fade 440ms ease-in forwards; }
+:is(.sprint-play, .arena-host) .dealt.landed-ok .figure { animation: sprint-dance 220ms steps(1) 2; }
+:is(.sprint-play, .arena-host) .dealt.landed-ok .bod { animation: sprint-frames 220ms steps(1) 2; }
+:is(.sprint-play, .arena-host) .dealt.landed-no { animation: sprint-fade 280ms ease-in forwards; }
+:is(.sprint-play, .arena-host) .dealt.landed-no .figure { animation: sprint-nope 280ms steps(2) 1; }
+:is(.sprint-play, .arena-host) .floater { position: absolute; z-index: 40; translate: -50% -50%; pointer-events: none; font-family: var(--font-pixel); font-size: calc(22 * var(--u)); line-height: 1; padding: 4px 10px; background: var(--arcade-panel); color: var(--arcade-good); border: 2px solid var(--arcade-good); white-space: nowrap; text-transform: none; animation: sprint-rise 800ms ease-out forwards; }
+:is(.sprint-play, .arena-host) .floater.no { color: var(--arcade-bad); border-color: var(--arcade-cardinal); }
+/* the strip keeps the last three answers with the face and the name */
+:is(.sprint-play, .arena-host) .strip { display: flex; gap: calc(8 * var(--u)); align-items: center; height: calc(40 * var(--u)); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; flex: 0 0 auto; }
+:is(.sprint-play, .arena-host) .strip::-webkit-scrollbar { display: none; }
+:is(.sprint-play, .arena-host) .chip { display: inline-flex; align-items: center; gap: 6px; min-height: calc(36 * var(--u)); padding: 2px 10px 2px 3px; background: var(--arcade-panel); border: 2px solid var(--arcade-line); border-radius: 0; color: var(--arcade-ink); font-family: var(--font-pixel); font-size: calc(20 * var(--u)); line-height: 1.1; text-transform: none; white-space: nowrap; max-width: 62%; flex: 0 0 auto; cursor: pointer; animation: sprint-slide 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+:is(.sprint-play, .arena-host) .chip .cname { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+:is(.sprint-play, .arena-host) .chip:active { transform: translateY(1px); }
+:is(.sprint-play, .arena-host) .chip.ok { border-color: var(--arcade-good); }
+:is(.sprint-play, .arena-host) .chip.no { border-color: var(--arcade-cardinal); color: var(--arcade-bad); }
+:is(.sprint-play, .arena-host) .chip:nth-child(2) { opacity: 0.75; }
+:is(.sprint-play, .arena-host) .chip:nth-child(3) { opacity: 0.5; }
+:is(.sprint-play, .arena-host) .chip .thumb { width: calc(24 * var(--u)); height: calc(28 * var(--u)); max-height: none; overflow: hidden; background: var(--arcade-bg); border: 0; border-radius: 0; flex: 0 0 auto; }
+:is(.sprint-play, .arena-host) .chip .thumb img { display: block; width: 100%; height: 100%; object-fit: contain; }
+:is(.sprint-play, .arena-host) .strip .hint { font-family: var(--font-pixel); font-size: calc(20 * var(--u)); color: var(--arcade-gold); text-transform: none; }
+
+@keyframes sprint-flash { from { opacity: 0.9; } to { opacity: 0; } }
+@keyframes sprint-enter { from { transform: scale(0.86); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes sprint-bob { 50% { transform: translateY(-4px); } }
+@keyframes sprint-dance { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-4px, -6px); } 50% { transform: translate(0, 0); } 75% { transform: translate(4px, -6px); } }
+@keyframes sprint-frames { 0%, 49% { background-image: var(--body-down); } 50%, 100% { background-image: var(--body-up); } }
+@keyframes sprint-nope { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+@keyframes sprint-fade { to { opacity: 0; } }
+@keyframes sprint-rise { 0% { transform: scale(0.7); opacity: 0; } 20% { opacity: 1; transform: translateY(-10%) scale(1.05); } 100% { transform: translateY(-80px) scale(1); opacity: 0; } }
+@keyframes sprint-slide { from { transform: translateX(-16px) scale(0.9); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* the same arena inside practice, rooms and the guest round */
+/* the arena on an ordinary page: sized to the width, and on a short phone to the height left under the page head */
+.arena-host { --u: min(0.84px, calc(100vw / 470), calc((100svh - 260px) / 720)); position: relative; }
+.arena-host .arena { position: relative; height: calc(720 * var(--u)); flex: none; }
+/* a docked piece is out of reach until another answer is allowed (a race retry), when it can be picked up again */
+.arena-host .piece.is-docked:not([data-grab="true"]) { pointer-events: none; }
+.arena-host .answer[data-picked="true"] .plate, .arena-host .answer[data-picked="true"] .slot.filled { border-color: var(--arcade-gold); border-style: solid; background: var(--arcade-panel-2); }
+.arena-host .answer.right .plate { border-color: var(--arcade-good); border-style: solid; background: #10331f; }
+.arena-host .answer.right .slot.filled { box-shadow: 0 0 0 4px var(--arcade-good); }
+.arena-host .answer.right .bod.ghost { opacity: 0.9; }
+.arena-host .answer.wrong .plate { border-color: var(--arcade-cardinal); border-style: solid; background: #3a1015; }
+.arena-host .answer.wrong .slot.filled { box-shadow: 0 0 0 4px var(--arcade-cardinal); }
+.arena-host .answer.blocked { opacity: 0.6; }
+.arena-host .answer:disabled { cursor: default; }
+.arena-host .piece.is-docked.is-right .figure { animation: sprint-dance 340ms steps(1) 3; }
+.arena-host .piece.is-docked.is-right .bod { animation: sprint-frames 340ms steps(1) 3; }
+.arena-host .piece.is-docked.is-wrong .figure { animation: sprint-nope 320ms steps(2) 1; }
+.arena-host .tilt-help { margin-top: 8px; }
+.arena-host .tag h2.prompt { font-family: var(--font-pixel); text-transform: none; margin: 0; letter-spacing: 0; line-height: 0.95; color: inherit; font-size: calc(30 * var(--u)); }
+
+/* ---------- the duel: two doors, the deck along the top, everyone on one count ---------- */
+.sprint-duel .lanes { display: flex; flex-direction: column; gap: calc(6 * var(--u)); flex: 0 0 auto; margin-top: calc(4 * var(--u)); }
+.sprint-duel .lane { display: flex; align-items: center; gap: 8px; height: calc(46 * var(--u)); }
+.sprint-duel .lane .who { font-family: var(--font-arcade); font-size: calc(10 * var(--u)); width: calc(64 * var(--u)); color: var(--arcade-gold); text-transform: uppercase; line-height: 1.4; flex: 0 0 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sprint-duel .lane.them .who { color: var(--arcade-ink-2); }
+.sprint-duel .lane .row { display: flex; gap: 4px; flex: 1 1 auto; overflow: hidden; align-items: center; height: 100%; }
+.sprint-duel .lane .head { width: calc(42 * var(--u)); height: calc(42 * var(--u)); flex: 0 0 auto; border: 2px solid var(--arcade-gold); background: var(--arcade-panel); overflow: hidden; transition: transform 200ms, opacity 200ms, width 200ms, margin 200ms; }
+.sprint-duel .lane .head img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sprint-duel .lane .head.gone { width: 0; margin-right: -4px; opacity: 0; border-width: 0; }
+.sprint-duel .lane .head.next { transform: scale(1.12); box-shadow: 0 0 0 2px #fff; }
+.sprint-duel .lane.them .head { border-color: var(--arcade-line); filter: grayscale(1) brightness(0.7); }
+.sprint-duel .lane.them .head.next { box-shadow: 0 0 0 2px var(--arcade-ink-2); filter: grayscale(1) brightness(0.95); }
+.sprint-duel .lane.dim { opacity: 0.5; }
+.sprint-duel .lane .count { font-family: var(--font-pixel); font-size: calc(30 * var(--u)); color: var(--arcade-ink-2); width: calc(30 * var(--u)); text-align: right; flex: 0 0 auto; font-variant-numeric: tabular-nums; text-shadow: var(--pixel-bold); }
+/* whoever is ahead is green */
+.sprint-duel .lane.leading .who, .sprint-duel .lane.leading .count { color: var(--arcade-good); }
+.sprint-duel .lane.leading .head { border-color: var(--arcade-good); filter: none; }
+.sprint-duel .lead { font-family: var(--font-pixel); font-size: calc(24 * var(--u)); color: var(--arcade-ink-2); text-align: center; margin: 0; min-height: calc(26 * var(--u)); flex: 0 0 auto; text-transform: none; line-height: 1.1; text-shadow: var(--pixel-bold); }
+.sprint-duel .lead b { font-weight: 400; }
+.sprint-duel .lead .ahead, .sprint-duel .lead .ahead b { color: var(--arcade-good); }
+.sprint-duel .lead .behind, .sprint-duel .lead .behind b { color: var(--arcade-bad); }
+/* the doors: the name on top, the place for the head, and the body, no box around any of it */
+.sprint-duel .answer.door { --slot: calc(100 * var(--u)); width: calc(172 * var(--u)); height: calc(288 * var(--u)); top: auto; bottom: 0; justify-content: flex-end; gap: calc(4 * var(--u)); }
+.sprint-duel .answer.door[data-k="0"] { left: 0; }
+.sprint-duel .answer.door[data-k="1"] { right: 0; left: auto; }
+/* the name tag: "Hello, I'm" in red over the name, the way the sticker has it */
+.sprint-duel .answer.door .plate { width: calc(172 * var(--u)); height: auto; min-height: calc(80 * var(--u)); padding: calc(5 * var(--u)) calc(6 * var(--u)) calc(7 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(3 * var(--u)); border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: #fff; color: var(--arcade-bg); font-size: calc(40 * var(--u)); line-height: 0.92; }
+.sprint-duel .answer.door .plate .tl { font-family: var(--font-arcade); font-size: calc(9 * var(--u)); color: var(--arcade-cardinal); text-transform: uppercase; }
+.sprint-duel .answer.door .plate.long { font-size: calc(30 * var(--u)); }
+.sprint-duel .answer.door[data-state="target"] .plate { background: var(--arcade-gold); box-shadow: 0 0 0 3px #fff; }
+.sprint-duel .answer.door .slot { border: 3px dashed var(--arcade-line); background: rgba(255, 255, 255, 0.03); transition: border-color 100ms, background 100ms; }
+.sprint-duel .answer.door[data-state="target"] .slot { border-color: var(--arcade-gold); border-style: solid; background: rgba(254, 197, 29, 0.12); }
+.sprint-duel .answer.door .bod { --bw: calc(132 * var(--u)); opacity: 1; }
+.sprint-duel .answer.door.hit .bod { animation: sprint-frames 340ms steps(1) 3; }
+.sprint-duel .answer.door.miss .bod { animation: sprint-nope 320ms steps(2) 1; }
+.sprint-duel .answer.door .key { left: auto; right: 4px; top: 2px; color: var(--arcade-line); }
+/* the piece is a whole person, held high so the flick is a clear drop; the head alone flies to the door */
+.sprint-duel .arena .piece { top: 26%; --slot: calc(170 * var(--u)); }
+.sprint-duel .arena .piece .bod { --bw: calc(124 * var(--u)); }
+.sprint-duel .dealt { width: auto; border: 4px solid var(--arcade-bg); box-shadow: 0 0 0 4px var(--arcade-gold); background: var(--arcade-panel); overflow: hidden; box-sizing: border-box; }
+.sprint-duel .dealt img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sprint-duel .strip .hint { font-family: var(--font-pixel); font-size: calc(19 * var(--u)); color: var(--arcade-gold); }
+/* the review of the other player's ten: small thumbs for the ones they got */
+.sprint-result .review.theirs { margin-top: 10px; border-top: 3px dashed var(--arcade-line); padding-top: 4px; }
+.sprint-result .pairs.minis { display: flex; flex-wrap: wrap; gap: 6px; }
+.sprint-result .pair.mini { flex-direction: row; gap: 6px; padding: 4px 8px 4px 4px; }
+.sprint-result .pair.mini .pthumb { width: 36px; height: 36px; box-shadow: 0 0 0 2px var(--arcade-good); }
+.sprint-result .pair.mini .pname { font-size: 17px; }
+/* the count, over whatever screen is up */
+.sprint-duel .countdown { position: absolute; inset: 0; z-index: 60; background: rgba(5, 5, 15, 0.84); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; padding: 24px; }
+.sprint-duel .countdown .digit { font-family: var(--font-arcade); font-size: 96px; line-height: 1; color: var(--arcade-gold); text-shadow: 6px 6px 0 var(--arcade-gold-edge); animation: duel-pulse 1s steps(1) infinite; }
+.sprint-duel .countdown .digit.go { font-size: 54px; color: var(--arcade-good); text-shadow: 4px 4px 0 #0f5a30; animation: none; }
+.sprint-duel .countdown p { font-family: var(--font-pixel); font-size: 22px; color: var(--arcade-ink-2); text-transform: none; }
+@keyframes duel-pulse { 0% { transform: scale(1.15); } 40% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .sprint-duel .countdown .digit { animation: none; } }
