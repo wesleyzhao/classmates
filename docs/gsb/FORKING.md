@@ -132,3 +132,5 @@ Read `AGENTS.md`, this guide and `FRONTEND-INTEGRATION.md`. Verify the linked pr
 ## Git deployment
 
 Connect the new repository to your own Vercel project with `vercel git connect`. Automatic Git deployment is enabled only for `main` in `vercel.json`. Keep production credentials out of Preview; configure isolated resources and enable specific preview branches deliberately if needed. Run checks before merging into `main`. The original Classmates deployment retains its existing project and URL; a fork must use its own resources.
+
+For automatic production smoke checks, set the GitHub repository Actions variable `PRODUCTION_ORIGIN` to your public HTTPS origin. The workflow tests that stable URL because immutable Vercel deployment URLs may require Vercel authentication. It needs no private credentials and never disables preview protection. Manual workflow runs can specify another origin.

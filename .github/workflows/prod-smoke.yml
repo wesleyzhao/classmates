@@ -1,4 +1,4 @@
-# After every production deployment (or by hand), play a round against the live site through the API.
+# Verify the public production origin without granting CI access to private data or protected previews.
 name: Production smoke test
 
 on:
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
-      - name: Play a round
+      - name: Verify production
         env:
-          BASE_URL: ${{ github.event.inputs.base_url || github.event.deployment_status.target_url }}
+          BASE_URL: ${{ github.event.inputs.base_url || vars.PRODUCTION_ORIGIN || github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
         run: node scripts/deployment-smoke.js "$BASE_URL"

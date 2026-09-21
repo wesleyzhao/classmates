@@ -38,3 +38,5 @@ The guest limit is per browser, backed by a cookie and server result. A differen
 - Phone and desktop screenshots inspected. No physical iPhone test or new production email sent during this release.
 
 The first feature-branch CI run passed all unit tests but failed the documentation voice check. Range/countdown punctuation was corrected. The first branch push also revealed that the Git glob `*` did not cover names containing `/`; the rule now uses `**` with an explicit `main` exception. That preview had no production database, Blob or private authentication credentials. Production remained on the prior deployment throughout testing.
+
+For automatic production smoke checks, set the GitHub repository Actions variable `PRODUCTION_ORIGIN` to your public HTTPS origin. The workflow tests that stable URL because immutable Vercel deployment URLs may require Vercel authentication. It needs no private credentials and never disables preview protection. Manual workflow runs can specify another origin.
