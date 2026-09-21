@@ -34,7 +34,7 @@ const server = await startDevServer({
 });
 const base = `http://localhost:${server.port}`;
 process.env.APP_ORIGIN = base;
-process.env.GSB_GUEST_PERSON_IDS = cards.slice(0, 8).map((card) => card.id).join(",");
+process.env.GSB_GUEST_PERSON_IDS = cards.slice(0, 10).map((card) => card.id).join(",");
 delete process.env.GSB_GUEST_PREVIEW;
 after(async () => {
   await server.close();
@@ -89,13 +89,13 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.equal(started.status, 200);
   assert.match(started.cookie, /^gsb-guest=[A-Za-z0-9_-]{43}$/);
   assert.equal(started.data.status, "ready");
-  assert.equal(started.data.questions.length, 8);
-  assert.equal(new Set(started.data.questions.map((q) => q.image)).size, 8);
-  assert.ok(started.data.questions.every((q) => q.choices.length === 4 && q.choices.every((c) => /^Student [0-7]$/.test(c.label))));
+  assert.equal(started.data.questions.length, 10);
+  assert.equal(new Set(started.data.questions.map((q) => q.image )).size, 10);
+  assert.ok(started.data.questions.every((q) => q.choices.length === 4 && q.choices.every((c) => /^Student [0-9]$/.test(c.label))));
   const guestCookie = started.cookie;
   const secret = guestCookie.split("=")[1];
   const [row] = await db.query("select doc from gsb_guest_runs where hash=$1", [hash(secret)]);
-  assert.ok(row.doc.questions.every((q) => /^fixture-[0-7]$/.test(q.target)));
+  assert.ok(row.doc.questions.every((q) => /^fixture-[0-9]$/.test(q.target)));
   assert.equal((await request("/api/guest/start", { method: "POST", cookie: guestCookie })).data.id, started.data.id);
   for (const path of ["/api/deck", "/api/progress", "/api/media/asset-0"])
     assert.equal((await request(path, { cookie: guestCookie })).status, 401);
@@ -104,7 +104,7 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   const beforeReads = blobReads.length;
   assert.equal((await request(assigned, { cookie: guestCookie })).status, 200);
   assert.equal(blobReads.length, beforeReads + 1);
-  for (const path of ["/api/guest/media/asset-8", "/api/guest/media/historical-0"])
+  for (const path of ["/api/guest/media/asset-10", "/api/guest/media/historical-0"])
     assert.equal((await request(path, { cookie: guestCookie })).status, 404);
   assert.equal(blobReads.length, beforeReads + 1);
 
@@ -114,7 +114,7 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   const results = await Promise.all([answers, wrong].map((a) => request("/api/guest/finish", { method: "POST", cookie: guestCookie, body: { answers: a } })));
   assert.ok(results.every((r) => r.status === 200));
   assert.deepEqual(results[0].data, results[1].data);
-  assert.ok([0, 8].includes(results[0].data.correct));
+  assert.ok([0, 10].includes(results[0].data.correct));
   assert.deepEqual(await db.query("select (select count(*) from gsb_matches) as matches,(select count(*) from gsb_ratings) as ratings"), before);
   assert.equal((await request("/api/guest/claim", { method: "POST", cookie: guestCookie })).status, 401);
   const sessionA = await login();
@@ -125,9 +125,12 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.equal((await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionB}` })).data.result, null);
   await db.query("update gsb_guest_runs set expires_at=now()-interval '1 minute' where hash=$1", [hash(secret)]);
   assert.deepEqual((await request("/api/guest/best", { cookie: sessionA })).data.result, results[0].data);
-  assert.deepEqual((await request("/api/guest", { cookie: guestCookie })).data, { status: "new" });
+  assert.deepEqual((await request("/api/guest", { cookie: guestCookie })).data, { status: "expired" });
+  const blocked = await request("/api/guest/start", { method: "POST", cookie: guestCookie });
+  assert.deepEqual(blocked.data, { status: "expired" });
+  assert.equal(blocked.cookie, "");
 
-  const next = await request("/api/guest/start", { method: "POST", cookie: guestCookie });
+  const next = await request("/api/guest/start", { method: "POST" });
   assert.equal(next.status, 200);
   const nextCookie = next.cookie;
   const nextTarget = next.data.questions[0].image;

@@ -23,6 +23,7 @@ export function publicSiteConfig(env = process.env) {
     throw new PlatformError(503,'configuration','The class label is not configured correctly.');
   return {
     cohortLabel,
+    landingMode: env.CLASSMATES_LANDING === "quick" ? "quick" : "games",
     emailLabel: stanford ? 'Your Stanford email' : 'Your email address',
     emailPlaceholder: `you@${domains[0]}`,
     emailHint: `No password. Any verified ${domains.join(' or ')} address can play.`,

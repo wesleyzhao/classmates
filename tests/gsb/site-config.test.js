@@ -8,9 +8,11 @@ test('public configuration has safe defaults, explicit domains and no credential
   assert.deepEqual(emailDomains({}),['stanford.edu']);
   assert.deepEqual(emailDomains({CLASSMATES_EMAIL_DOMAINS:' Example.edu,ALUMNI.example.edu,example.edu '}),['example.edu','alumni.example.edu']);
   assert.equal(publicSiteConfig({}).emailLabel,'Your Stanford email');
+  assert.equal(publicSiteConfig({}).landingMode,'games');
+  assert.equal(publicSiteConfig({CLASSMATES_LANDING:'quick'}).landingMode,'quick');
   const config=publicSiteConfig({CLASSMATES_EMAIL_DOMAINS:'example.edu',CLASSMATES_COHORT_LABEL:'Our class',AUTH_SECRET:'hidden'});
   assert.equal(config.cohortLabel,'Our class');assert.equal(config.emailPlaceholder,'you@example.edu');
-  assert.deepEqual(Object.keys(config).sort(),['cohortLabel','emailHint','emailLabel','emailPlaceholder']);
+  assert.deepEqual(Object.keys(config).sort(),['cohortLabel','emailHint','emailLabel','emailPlaceholder','landingMode']);
   for(const domains of ['',',','*.example.edu','example.edu,','example.edu@evil.test','localhost','-bad.edu','bad-.edu','bad..edu','https://example.edu'])
     assert.throws(()=>emailDomains({CLASSMATES_EMAIL_DOMAINS:domains}),/not configured/);
   for(const label of ['', 'a'.repeat(101), 'a\nb'])assert.throws(()=>publicSiteConfig({CLASSMATES_COHORT_LABEL:label}));

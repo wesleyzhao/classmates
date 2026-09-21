@@ -12,7 +12,7 @@ import {
   guestMediaPath,
 } from "../../server/gsb/guest.js";
 
-const cards = Array.from({ length: 8 }, (_, index) => ({
+const cards = Array.from({ length: 10 }, (_, index) => ({
   id: `fixture-${index}`,
   answer: `Synthetic Student ${index}`,
   image: `/api/media/asset-${index}`,
@@ -93,21 +93,21 @@ test("guest feature fails closed without both exact flag and bounded allowlist",
     process.env.GSB_GUEST_PERSON_IDS = "fixture-0,fixture-0";
     assert.equal(guestConfig(), null);
     enabled();
-    assert.equal(guestConfig().size, 8);
+    assert.equal(guestConfig().size, 10);
   } finally { restore(); }
 });
 
-test("one cookie gets one eight-face run, even after completion and refresh", async () => {
+test("one cookie gets one ten-face run, even after completion and refresh", async () => {
   enabled();
   try {
     const { db, runs } = stub(), res = response();
     const started = await startGuestRun(db, { headers: {} }, res, deck);
     assert.equal(started.status, "ready");
     assert.equal(started.questionMs, 8000);
-    assert.equal(started.questions.length, 8);
+    assert.equal(started.questions.length, 10);
     assert.ok(res.headers["Set-Cookie"].includes("HttpOnly"));
     assert.ok(res.headers["Set-Cookie"].includes("SameSite=Lax"));
-    assert.ok(res.headers["Set-Cookie"].includes("Max-Age=604800"));
+    assert.ok(res.headers["Set-Cookie"].includes("Max-Age=31536000"));
     assert.equal(runs.size, 1);
     const req = request(res);
     assert.deepEqual(await startGuestRun(db, req, response(), deck), await getGuestRun(db, req));
@@ -115,8 +115,8 @@ test("one cookie gets one eight-face run, even after completion and refresh", as
     const row = [...runs.values()][0],
       answers = row.doc.questions.map((question) => ({ questionId: question.id, choice: question.correctChoice, elapsedMs: 0 }));
     const result = await finishGuestRun(db, req, { answers });
-    assert.equal(result.score, 12000);
-    assert.equal(result.correct, 8);
+    assert.equal(result.score, 15000);
+    assert.equal(result.correct, 10);
     assert.deepEqual(await finishGuestRun(db, req, { answers: [] }), result);
     assert.equal((await getGuestRun(db, req)).status, "complete");
     assert.equal((await startGuestRun(db, req, response(), deck)).status, "complete");
@@ -125,17 +125,17 @@ test("one cookie gets one eight-face run, even after completion and refresh", as
 });
 
 test("logs have exact order, choices, and bounded integer elapsed times", () => {
-  const doc = { questions: Array.from({ length: 8 }, (_, index) => ({ id: String(index), correctChoice: "2" })) };
+  const doc = { questions: Array.from({ length: 10 }, (_, index) => ({ id: String(index), correctChoice: "2" })) };
   const logs = doc.questions.map((question) => ({ questionId: question.id, choice: "2", elapsedMs: 7999 }));
   const result = scoreGuestRun(doc, logs);
-  assert.equal(result.score, 8128);
-  assert.equal(result.elapsedMs, 63992);
+  assert.equal(result.score, 10160);
+  assert.equal(result.elapsedMs, 79990);
   const atCutoff = logs.map((item, index) => index === 0 ? { ...item, elapsedMs: 8000 } : item);
   const cutoffResult = scoreGuestRun(doc, atCutoff);
-  assert.equal(cutoffResult.correct, 7);
+  assert.equal(cutoffResult.correct, 9);
   assert.equal(cutoffResult.answers[0].choice, null);
   const skipped = logs.map((item, index) => index === 0 ? { ...item, choice: null, elapsedMs: 8000 } : item);
-  assert.equal(scoreGuestRun(doc, skipped).correct, 7);
+  assert.equal(scoreGuestRun(doc, skipped).correct, 9);
   for (const altered of [
     logs.slice(0, 7),
     logs.map((item, index) => index === 0 ? { ...item, questionId: "7" } : item),
@@ -174,5 +174,21 @@ test("guest media stays assigned and live; claims require verified session scope
     assert.equal(await guestBest(db, { id: "account", access: "email" }), null);
     process.env.GSB_GUEST_PREVIEW = "false";
     await assert.rejects(guestMediaPath(db, req, "asset-1"), /not available/);
+  } finally { restore(); }
+});
+
+test("a spent cookie cannot mint a fresh run even when its database row was cleaned up", async () => {
+  enabled();
+  try {
+    const { db, runs } = stub(), res = response();
+    await startGuestRun(db, { headers: {} }, res, deck);
+    const req = request(res);
+    runs.clear();
+    const retry = response();
+    assert.deepEqual(await startGuestRun(db, req, retry, deck), { status: "expired" });
+    assert.equal(runs.size, 0);
+    assert.equal(retry.headers["Set-Cookie"], undefined);
+    process.env.GSB_GUEST_PERSON_IDS = cards.slice(0, 8).map(c => c.id).join(",");
+    assert.equal(guestConfig(), null);
   } finally { restore(); }
 });

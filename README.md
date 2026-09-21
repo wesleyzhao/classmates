@@ -1,11 +1,15 @@
-# Parlor and Classmates
+# Classmates, built with Parlor
 
-Make and play small multiplayer games on mobile and desktop browsers. This repository contains two applications that share pure game rules and small UI primitives:
+Learn faces and names through fast solo rounds and multiplayer games on mobile and desktop browsers.
+
+[Play Classmates](https://gsb-classmates.vercel.app) · [Fork and deploy your own](docs/gsb/FORKING.md) · [Agent guide](AGENTS.md)
+
+Make and play small multiplayer games with the included Parlor engine. This repository contains two applications that share pure game rules and small UI primitives:
 
 | Profile | What it does | Content access |
 | --- | --- | --- |
 | **Parlor** (default) | Make quizzes, races, board and card games; share rooms and chat. | Catalogs and decks are public. |
-| **Classmates** (`APP_PROFILE=gsb`) | Learn faces and names through Practice, Speed rounds, simultaneous quizzes and races. Includes email login, nicknames, spaced repetition, face history and rankings. | Names and portraits require a session. Each deployment owns its roster and accounts. |
+| **Classmates** (`APP_PROFILE=gsb`) | Learn faces and names through Practice, Speed rounds, simultaneous quizzes and races. Includes email login, nicknames, spaced repetition, face history and rankings. | The full roster requires a session. An optional ten-face guest sample introduces the game. Each deployment owns its roster and accounts. |
 
 Classmates is a separate Vercel project, not a second public deck in Parlor. Its original Stanford design is included; no real roster, portraits, accounts or credentials are included. See [the fork and deployment guide](docs/gsb/FORKING.md) to use your own people and email domains.
 

@@ -94,7 +94,7 @@ function App() {
   const [direction, setDirection] = useState("mixed"),
     [demo, setDemo] = useState(false),
     [guestAvailable, setGuestAvailable] = useState(false),
-    [guestOpen, setGuestOpen] = useState(location.pathname === "/guest"),
+    [guestOpen, setGuestOpen] = useState(["/", "/guest"].includes(location.pathname)),
     [Guest, setGuest] = useState(null),
     [Sprint, setSprint] = useState(null),
     [guestSaved, setGuestSaved] = useState(null);
@@ -138,6 +138,7 @@ function App() {
         acceptSession(account);
         setEmailReady(s.emailReady);
         setSite(s.site);
+        if (["/", "/login"].includes(location.pathname) && s.site?.landingMode === "quick") setScreen("speed");
         setDemo(s.demo);
         setGuestAvailable(s.guest?.enabled === true);
       })
@@ -228,7 +229,7 @@ function App() {
     setChallenge(null);
     setScreen(next);
     setGuestOpen(false);
-    history.pushState(null, "", next === "play" ? "/" : `/${next}`);
+    history.pushState(null, "", next === "play" ? (site?.landingMode === "quick" ? "/games" : "/") : `/${next}`);
   };
   // A speed challenge lives at /speed/CODE; the speed screen remounts for the code.
   const openChallenge = (code) => {
@@ -240,7 +241,7 @@ function App() {
   };
   useEffect(() => {
     const back = () => {
-      setGuestOpen(location.pathname === "/guest");
+      setGuestOpen(["/", "/guest"].includes(location.pathname));
       const code = location.pathname
         .match(/^\/r\/([a-z]{4})$/i)?.[1]
         ?.toUpperCase();
@@ -250,7 +251,7 @@ function App() {
         run(async () => enter(await api(`rooms/${code}/join`, {})));
       else
         setScreen(
-          speed ? "speed"
+          (speed || location.pathname === "/" && site?.landingMode === "quick") ? "speed"
             : ["practice", "scores", "profile", "speed"].includes(location.pathname.slice(1))
               ? location.pathname.slice(1)
               : "play",
@@ -258,7 +259,7 @@ function App() {
     };
     window.addEventListener("popstate", back);
     return () => window.removeEventListener("popstate", back);
-  }, [session?.nickname]);
+  }, [session?.nickname, site?.landingMode]);
   const logout = () =>
     run(async () => {
       await api("auth/logout", {});
@@ -318,7 +319,7 @@ function App() {
     ${!loaded
       ? html`<p class="loading" role="status">Opening Classmates.</p>`
       : showGuestRound
-        ? Guest ? html`<${Guest} onSignIn=${() => {
+        ? Guest ? html`<${Guest} signInForm=${html`<${Login} compact=${true} site=${site} emailReady=${emailReady} run=${run} />`} onSignIn=${() => {
             setGuestOpen(false);
             history.pushState(null, "", "/login");
           }} />` : html`<p role="status" class="loading">Opening your speed round.</p>`
@@ -339,6 +340,7 @@ function App() {
             onLogin=${(account) => {
               setLoginToken(null);
               history.replaceState(null, "", "/");
+              setScreen(site?.landingMode === "quick" ? "speed" : "play");
               acceptSession(account);
             }}
           />`
@@ -347,13 +349,14 @@ function App() {
               account=${session}
               run=${run}
               onSave=${(account) => {
+                const firstLogin = !session.nickname;
                 setSession(account);
-                navigate("play");
+                navigate(firstLogin && site?.landingMode === "quick" ? "speed" : "play");
               }}
               logout=${logout}
             />`
           : screen === "speed"
-            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}`} account=${session} challenge=${challenge} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
+            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}`} account=${session} guestSaved=${guestSaved} initialLength=${site?.landingMode === "quick" ? "quick" : "short"} challenge=${challenge} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
               : html`<p role="status">Opening speed round.</p>`
           : screen === "practice"
             ? html`<${Practice}
@@ -393,15 +396,16 @@ function App() {
     </footer>
   </div>`;
 }
-function Login({ token, emailReady, run, onLogin, onNewLink, guestAvailable, onGuest, invite = null, site }) {
+function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest, invite = null, site, compact = false }) {
   const [email, setEmail] = useState(""),
     [sent, setSent] = useState(false),
+    [formError, setFormError] = useState(""),
     [busy, setBusy] = useState(false);
   const showGuest = guestAvailable && !token && !sent;
   const submit = async (e) => {
     e?.preventDefault();
-    setBusy(true);
-    await run(async () => {
+    setBusy(true); setFormError("");
+    try {
       if (token) {
         const data = await api("auth/verify", token);
         onLogin(data.account);
@@ -409,20 +413,21 @@ function Login({ token, emailReady, run, onLogin, onNewLink, guestAvailable, onG
         await api("auth/request", { email });
         setSent(true);
       }
-    });
-    setBusy(false);
+    } catch (e) { setFormError(e.message); }
+    finally { setBusy(false); }
   };
-  return html`<section class="narrow">
-    <div class="eyebrow">A familiar face, a name to remember.</div>
+  return html`<section class=${compact ? "guest-signin" : "narrow"}>
+    ${!compact && html`<div class="eyebrow">A familiar face, a name to remember.</div>
     <h1>Get to know <br />your classmates.</h1>
     <p class="muted">
       Learn the class at your pace, or see how you do together.
-    </p>
+    </p>`}
     ${invite && html`<p class="notice small" role="status">Sign in to play speed challenge <strong>${invite}</strong>. It opens as soon as you are in.</p>`}
     ${showGuest && html`<div class="guest-invite">
-      <button class="btn btn-primary" onClick=${onGuest}>Try an 8-face speed round</button>
+      <button class="btn btn-primary" onClick=${onGuest}>Try a 10-face speed round</button>
       <p class="small muted">One quick warm-up. No sign-in needed.</p>
     </div>`}
+    ${formError && html`<p class="notice error" role="alert">${formError}</p>`}
     ${token
       ? html`<div class="gsb-card">
           <h2>Welcome back.</h2>

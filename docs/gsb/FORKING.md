@@ -4,7 +4,7 @@ This is a single-cohort application per deployment. A fork gets the engine and d
 
 ## 1. Clone and choose your project
 
-Fork the repository to your account, clone your fork, and use Node.js 22:
+Fork [wesleyzhao/classmates](https://github.com/wesleyzhao/classmates) to your account, clone your fork, and use Node.js 22:
 
 ```bash
 npm ci
@@ -39,6 +39,7 @@ Set these values through Vercel environment management and in ignored `.env.loca
 | `AUTH_SECRET` | A unique random value of at least 32 characters. Generate with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. |
 | `DESCOPE_PROJECT_ID` | Your own configured Descope project, or use the Resend alternative below. |
 | `CLASSMATES_EMAIL_DOMAINS` | Comma-separated exact domains, e.g. `example.edu,alumni.example.edu`. Defaults to `stanford.edu`. No wildcards; subdomains require an explicit entry. |
+| `CLASSMATES_LANDING` | `games` (default) or `quick` to open the ten-person Speed screen at `/`. Other games remain at `/games`. |
 | `CLASSMATES_COHORT_LABEL` | A short display label. Defaults to the original Stanford class label for the Stanford policy, otherwise `Classmates`. |
 
 Choose a stable project URL before configuring email. An `APP_ORIGIN` shared with production makes preview login point to production; use a separate preview project/origin and data resources for independent previews. Never expose production database credentials to fork PR builds.
@@ -51,7 +52,7 @@ Descope supplies a default messaging connector, so this adapter can work without
 
 Alternatively, remove `DESCOPE_PROJECT_ID` and set `RESEND_API_KEY` and `EMAIL_FROM` for a sender domain you control and have verified. Do not configure both providers expecting automatic failover: Descope takes precedence. Delivery always uses the address entered by the user. The app requires verified provider proof, not a decoded JWT or a client-provided email.
 
-The normal login flow asks only for email, then lets the user choose a nickname (default: email username). Removing a domain prevents its normal sessions and pending links from signing in; explicit operator tester grants remain separate. New forks start with no tester grants. The guest experiment stays disabled unless you deliberately configure it; read `docs/gsb/GUEST-ROUND.md` before considering it.
+The normal login flow asks only for email, then lets the user choose a nickname (default: email username). Removing a domain prevents its normal sessions and pending links from signing in; explicit operator tester grants remain separate. New forks start with no tester grants. The guest introduction stays disabled in new forks unless you deliberately configure it; read `docs/gsb/GUEST-ROUND.md` before considering it.
 
 ## 4. Prepare your own roster locally
 
@@ -127,3 +128,7 @@ This detects the profile. For Classmates it checks the shell and unauthenticated
 ## Instructions for an agent importing a roster
 
 Read `AGENTS.md`, this guide and `FRONTEND-INTEGRATION.md`. Verify the linked project and database belong to the requester before any import or migration. Keep private input, credentials, login links, photos and screenshots outside Git. Start with the dry run, publish only the requested roster, and check authenticated access plus anonymous rejection. Do not remove tester accounts, rotate active access codes or purge records as incidental cleanup. Keep scoring/selection pure, Practice-only spaced repetition separate from cross-mode face history, and Speed's answer-to-next path independent of network calls. Report precisely which automated, browser, delivery and hardware checks ran.
+
+## Git deployment
+
+Connect the new repository to your own Vercel project with `vercel git connect`. Automatic Git deployment is enabled only for `main` in `vercel.json`. Keep production credentials out of Preview; configure isolated resources and enable specific preview branches deliberately if needed. Run checks before merging into `main`. The original Classmates deployment retains its existing project and URL; a fork must use its own resources.

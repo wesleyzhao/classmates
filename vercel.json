@@ -45,5 +45,11 @@
       ]
     }
   ],
-  "buildCommand": "node scripts/build.js"
+  "buildCommand": "node scripts/build.js",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": false
+    }
+  }
 }

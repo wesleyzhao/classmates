@@ -1,6 +1,8 @@
 # Public release checklist
 
-Working branch: `codex/public-release-prep`, based on the tested `codex/face-history` release. Both app profiles stay in one repository: reusable Parlor kits and the focused Classmates application. This preparation does not change repository visibility, remove tester accounts, or close their sessions.
+Current publication work: [LAUNCH.md](LAUNCH.md). The clean repository is `wesleyzhao/classmates`; the original repo remains private. The following records the earlier release preparation.
+
+Historical working branch: `codex/public-release-prep`, based on the tested `codex/face-history` release. Both app profiles stay in one repository: reusable Parlor kits and the focused Classmates application. This preparation does not change repository visibility, remove tester accounts, or close their sessions.
 
 ## Preparation
 

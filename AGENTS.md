@@ -65,6 +65,10 @@ npm run deploy              vercel --prod
 - Run `npm test` and `npm run check` before you say something is done. For anything a player sees, look at it at phone width and at desktop width.
 - Do not add dependencies. The server runtime uses `@neondatabase/serverless` and `@vercel/blob`; browser dependencies are vendored.
 
+## Canonical source and deployment
+
+The public source is `wesleyzhao/classmates`. Start new branches from its `main`; do not merge Git history from the original private Parlor repository. The existing Classmates Vercel project and URL retain their own data. Git deployments run from `main` only. Before deploying new design work, read `docs/gsb/LAUNCH.md` and preserve the guest entry, login/claim flow and all other game modes.
+
 ## Where to look next
 
 - For forks and private content imports, read `docs/gsb/FORKING.md`, `SECURITY.md` and `docs/gsb/PUBLIC-RELEASE.md`. Keep credentials, real roster input, photos and test outboxes out of Git. Preserve tester accounts and opt-outs.

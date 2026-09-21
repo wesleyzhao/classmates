@@ -4,7 +4,7 @@ import { database, latestDeck } from "./db.js";
 import { classRooms } from "./rooms.js";
 import { loadLeaderboard } from "./leaderboard.js";
 import { saveNickname } from "./profile.js";
-import { guestConfig, getGuestRun, startGuestRun, finishGuestRun, claimGuestRun, guestBest, guestMediaPath } from "./guest.js";
+import { GUEST_ROUND_SIZE, guestConfig, getGuestRun, startGuestRun, finishGuestRun, claimGuestRun, guestBest, guestMediaPath } from "./guest.js";
 import { faceHistories, faceSummary } from "./face-history.js";
 import { publicSiteConfig } from './site-config.js';
 import { createChallenge, joinChallenge, challengeView, rematchChallenge, readyChallenge, beginChallenge, progressChallenge, prepareSprint, startSprint, finishSprint, sprintRecords, checkpointSprint } from "./sprint.js";
@@ -68,6 +68,8 @@ export function createGsbHandler(deps = {}) {
         if (p.length === 1 && method === "GET")
           return sendJson(res, 200, await getGuestRun(db, req) ?? { status: "new" });
         if (p[1] === "start" && p.length === 2 && method === "POST") {
+          const existing = await getGuestRun(db, req);
+          if (existing) return sendJson(res, 200, existing);
           await limit(`guest-start:${ip}`, 5, 3600000);
           await limit("guest-start-day", 200, 86400000);
           const deck = await (deps.latestDeck ?? latestDeck)();
@@ -115,7 +117,7 @@ export function createGsbHandler(deps = {}) {
           account,
           site: publicSiteConfig(),
           emailReady: emailReady(),
-          guest: { enabled: !!guestConfig(), count: 8 },
+          guest: { enabled: !!guestConfig(), count: GUEST_ROUND_SIZE },
           demo:
             !process.env.VERCEL &&
             process.env.NODE_ENV === "test" &&

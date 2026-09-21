@@ -25,15 +25,15 @@ export const LENGTHS = { quick: 10, short: 20 };
 /** Controller for one signed-in account. Mount with key=account.id (plus the challenge code, when there is one).
  * A challenge plays one shared sequence: the round comes from the join route, settings are fixed, and standings are polled.
  * @param {{id:string}} account
- * @param {{ challenge?: string | null }} [options]
+ * @param {{ challenge?: string | null, initialLength?: string }} [options]
  */
-export function useSprintRound(account, { challenge = null } = {}) {
+export function useSprintRound(account, { challenge = null, initialLength = "short" } = {}) {
   const [history] = useState(() => createFaceCheckpoints(account.id));
   const storageKey = challenge ? `${account.id}:${challenge}` : account.id;
   const [restored] = useState(() => readPending(storageKey));
   const pending = useRef(restored);
   const [direction, setDirection] = useState(pending.current?.direction || "face"),
-    [length, setLength] = useState(pending.current?.length || "short"),
+    [length, setLength] = useState(pending.current?.length || (Object.hasOwn(LENGTHS, initialLength) ? initialLength : "short")),
     [phase, setPhase] = useState(pending.current ? "result" : "setup"),
     [round, setRound] = useState(null),
     [loaded, setLoaded] = useState([0, 0]),

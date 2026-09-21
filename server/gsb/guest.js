@@ -5,7 +5,8 @@ import { makeRng } from "../../public/kits/_lib/rng.js";
 import { hash } from "./auth.js";
 
 const LIFE_MS = 7 * 86400000;
-const ROUND_SIZE = 8;
+export const GUEST_ROUND_SIZE = 10;
+const ROUND_SIZE = GUEST_ROUND_SIZE;
 const DURATION_MS = 8000;
 const fail = (status, code, message) => {
   throw new PlatformError(status, code, message);
@@ -20,7 +21,7 @@ export function guestConfig() {
   if (!raw) return null;
   const ids = raw.split(",").map((value) => value.trim());
   if (
-    ids.length < 8 ||
+    ids.length < ROUND_SIZE ||
     ids.length > 32 ||
     new Set(ids).size !== ids.length ||
     ids.some((id) => !/^[A-Za-z0-9_-]{1,80}$/.test(id))
@@ -44,11 +45,11 @@ function cookie(req) {
   return value && /^[A-Za-z0-9_-]{43}$/.test(value) ? value : null;
 }
 
-/** Set a seven-day, HttpOnly capability cookie on an HTTP response. */
+/** Set a one-year, HttpOnly capability cookie on an HTTP response. */
 export function guestCookie(res, value) {
   res.setHeader(
     "Set-Cookie",
-    `${cookieName()}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${value ? 604800 : 0}${process.env.VERCEL || process.env.APP_ORIGIN?.startsWith("https:") ? "; Secure" : ""}`,
+    `${cookieName()}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${value ? 31536000 : 0}${process.env.VERCEL || process.env.APP_ORIGIN?.startsWith("https:") ? "; Secure" : ""}`,
   );
 }
 
@@ -74,11 +75,11 @@ function publicRun(row) {
     unranked: true,
     direction: "face",
     questionMs: DURATION_MS,
-    count: ROUND_SIZE,
+    count: doc.questions.length,
     expiresAt: Number(new Date(row.expires_at)),
     claimed: !!row.claimed_account_id,
     questions: doc.questions.map(({ id, image, choices, correctChoice }) => ({
-      id, prompt: "What is their name?", image, choices, correctChoice,
+      id, direction: "face", image, choices, correctChoice,
     })),
     result: doc.result ?? null,
   };
@@ -92,13 +93,13 @@ export async function getGuestRun(db, req) {
     "select hash,doc,expires_at,claimed_account_id from gsb_guest_runs where hash=$1 and expires_at>now()",
     [hash(secret)],
   );
-  if (!row) return null;
+  if (!row) return { status: "expired" };
   if (!(await activeRun(db, row.doc, allowed)))
     fail(410, "guest_content_removed", "This practice round is no longer available.");
   return publicRun(row);
 }
 
-/** Start exactly one cookie-backed, eight-face round from the approved deck subset.
+/** Start exactly one cookie-backed, ten-face round from the approved deck subset.
  * @param {any} db
  * @param {any} req
  * @param {any} res
@@ -151,8 +152,8 @@ export async function startGuestRun(db, req, res, deck, options = {}) {
 
 /** Validate client logs and calculate an unranked personal-practice score. */
 export function scoreGuestRun(doc, answers) {
-  if (!Array.isArray(answers) || answers.length !== ROUND_SIZE)
-    fail(400, "guest_answers", "Submit all eight practice answers.");
+  if (!Array.isArray(answers) || answers.length !== doc.questions.length)
+    fail(400, "guest_answers", "Submit every answer in your round.");
   let score = 0, correct = 0, elapsedMs = 0;
   const reviewed = answers.map((answer, index) => {
     const question = doc.questions[index];
@@ -175,7 +176,7 @@ export function scoreGuestRun(doc, answers) {
     }
     return { questionId: question.id, choice, elapsedMs: answer.elapsedMs, correct: isCorrect };
   });
-  return { score, correct, count: ROUND_SIZE, elapsedMs, answers: reviewed, unranked: true };
+  return { score, correct, count: doc.questions.length, elapsedMs, answers: reviewed, unranked: true };
 }
 
 /** Atomically complete a run once; retries return the first persisted result. */

@@ -8,7 +8,7 @@ Read `AGENTS.md`, [CLAUDE-DESIGN-HANDOFF.md](CLAUDE-DESIGN-HANDOFF.md), [ARCHITE
 
 The isolated `codex/face-history` branch also contains the [responsiveness and recovery review](PERFORMANCE-REVIEW.md): bounded/cancellable API requests, fewer setup requests, shared checkpoint draining and monotonic duel progress. Preserve those controller contracts when merging styling work. No visual redesign or new dependency is required.
 
-The latest reviewed work is now in `/Users/wesley/projects/parlor-gsb-history`, branch `codex/public-release-prep`. It includes public-fork preparation and reusable Speed batches. Claude's original checkout remains separate. Merge the reviewed changes before the next design deployment; do not replace its controller with an older copy.
+The canonical source is now [wesleyzhao/classmates](https://github.com/wesleyzhao/classmates), locally `/Users/wesley/projects/parlor-public-source`. Use branches from its `main` for new design work. The original private repo and Claude checkout remain historical references; never merge their Git history into the clean public repository. This source already includes Claude's reviewed design and the Speed buffer fixes. See [LAUNCH.md](LAUNCH.md).
 
 ## Mode map
 
@@ -18,7 +18,7 @@ The latest reviewed work is now in `/Users/wesley/projects/parlor-gsb-history`, 
 | Speed round | `/speed`, `SprintRound` plus `useSprintRound` | Every tap immediately, including wrong answers | One completed log, browser time, accuracy-first score and fastest-perfect records, no Elo |
 | Together | Home / Start a quiz, room view in `app.js` | Server moves every player through shared phases | Server scores accuracy and speed, server-only answer key before reveal, multiplayer Elo |
 | Race | Home / Start a race, same room view | Correct answer only; mistakes remain on that question | Server timing/order, fixed account seats, multiplayer Elo |
-| Guest experiment | `/guest`, `GuestRound` | Eight timed faces from an approved sample | Separate guest result, verified sign-in to claim; disabled on real localhost and production |
+| Guest introduction | `/` and `/guest`, `GuestRound` | Ten preloaded faces, automatic 3–2–1, immediate taps or flicks | One browser attempt, inline email sign-in to save or continue; operator-configured sample only |
 
 `/profile` edits the current nickname without changing identity; `/scores` renders the server's rating and badge decisions. Keep room sharing, chat, rejoin, sign-out, used-link recovery and browser-back navigation reachable. Home must retain the speed entry in addition to practice and both multiplayer modes.
 
@@ -93,8 +93,16 @@ After styling, inspect every major state above, narrow widths and larger text. T
 3. Update VALIDATION.md and TODO.md with exact evidence and remaining limits.
 4. Commit and push `gsb-classmates`; apply only necessary additive schema migrations before deployment.
 5. Deploy from this worktree with `vercel deploy --prod --yes --scope wesleyzhaos-projects`. Shared-repo automatic deployment is intentionally disconnected.
-6. Verify live health/session, unauthenticated private-API denial, guest disabled, a real signed-in page and private portraits, then scan Vercel errors. Avoid creating fabricated scores in the real class ledger.
+6. Verify live health/session, unauthenticated private-API denial, the configured guest behavior, a real signed-in page and private portraits, then scan Vercel errors. Avoid creating fabricated scores in the real class ledger.
 
 ## Cross-mode face history (Codex branch after `1fb62d4`)
 
 See [FACE-HISTORY.md](FACE-HISTORY.md) for the selection policy, personal history component, partial-run checkpoint lifecycle, database migration and API changes. Duels now require the loaded `selectionVersion` for Ready and Start. Preserve the controller's refresh/preload flow while styling. Only Practice updates spaced repetition. The visual changes are confined to an expandable account history panel; the arcade and duel artwork are unchanged.
+
+## Ten-face entry contract
+
+`CLASSMATES_LANDING=quick` makes signed-in `/` open Speed with `initialLength="quick"`; `/games` retains the complete game menu. Direct Practice, account, scores, room, challenge and login links take precedence. The default fork setting stays `games`. The guest flag and approved sample are separate from the signed-in landing choice.
+
+`GuestRound` owns its media through `prepareRoundMedia`. Its countdown starts only after decoding succeeds and restarts if the page becomes visible during the countdown. Answers update synchronously, check the displayed question ID and never wait for an animation or HTTP. `sprint-pieces.js` supplies the same portrait and choice artwork to both guest and signed-in Speed. Keep guest input and result prompts inside the full-screen cabinet: shell-level notices sit behind it. The shared `Login` supports a compact inline email form and displays its own errors.
+
+Preserve the server-issued guest cookie on email login so the completed result can be claimed. Never send guest attempts to rated multiplayer or Practice repetition. The existing claim trigger adds observed faces to cross-mode history. See [GUEST-ROUND.md](GUEST-ROUND.md) for storage, expiry and replay limits.

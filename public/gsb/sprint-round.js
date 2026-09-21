@@ -2,38 +2,20 @@
 // into the corner that names them. Rules, timing and persistence live in useSprintRound; this file only draws.
 // With a challenge code, the same screens show the code, who has joined, and the standings.
 import { html, useEffect, useLayoutEffect, useRef, useState } from "../app/h.js";
-import { ShareLink, visibleQuestionPrompt } from "./components.js";
+import { ShareLink } from "./components.js";
 import { LENGTHS, useSprintRound } from "./use-sprint-round.js";
 import { DuelRound } from "./duel-round.js";
 import { GAME_NAME } from "./brand.js";
 import { isSoundOn, setSound, sfx } from "./sound.js";
 import { useFlick, dealPiece, flashZone, floater, answerSummary, targetOf, firstName, introTour } from "./sprint-arcade.js";
 
+import { pieceMarkup, zoneMarkup } from "./sprint-pieces.js";
+
 const seconds = (ms) => `${(ms / 1000).toFixed(2)}s`;
 const pad2 = (n) => String(n).padStart(2, "0");
 const HINTS = { face: "Walk them onto their name", name: "Put the body under the right face" };
 const DIRECTION_LABEL = { face: "Face to name", name: "Name to face", mixed: "Both directions" };
 const SETTINGS_PHASES = ["setup", "ready", "loading"];
-
-/** The piece the player holds: a whole person on a face question, a headless body wearing the name on a name question. */
-function pieceMarkup(question, photoUrls, silhouette) {
-  if (question.direction === "face") return html`<span class="figure">
-    <span class="slot filled">${!silhouette && html`<img class="portrait" src=${photoUrls.get(question.image)} alt="Classmate portrait" draggable=${false} />`}</span>
-    <span class="bod"></span>
-  </span>`;
-  return html`<span class="figure">
-    <span class="slot"></span><span class="bod"></span>
-    ${silhouette
-      ? html`<span class="tag chest"><span class="tl"></span><span class="tn"></span></span>`
-      : html`<h1 class="sprint-name tag chest"><span class="tl">Hi, I'm</span><span class="tn">${visibleQuestionPrompt(question)}</span></h1>`}
-  </span>`;
-}
-
-/** A corner target: a name plate on a face question, a framed portrait on a name question, each with a faint body under it. */
-function zoneMarkup(choice, i, photoUrls) {
-  if (choice.image) return html`<span class="slot filled"><span class="key" aria-hidden="true">${i + 1}</span><img class="choice-photo" src=${photoUrls.get(choice.image)} alt=${`Option photo ${i + 1}`} draggable=${false} /></span><span class="bod ghost"></span>`;
-  return html`<span class="plate ${choice.label.length > 22 ? "long" : ""}"><span class="key" aria-hidden="true">${i + 1}</span><span class="pname">${choice.label}</span></span><span class="bod ghost"></span>`;
-}
 
 /** Who is in a challenge: finished players ranked first, then everyone still to play. */
 function Standings({ list, me }) {
@@ -46,8 +28,8 @@ function Standings({ list, me }) {
 }
 
 /** Speed-round view and accessible focus transitions; rules and persistence live in useSprintRound. */
-export function SprintRound({ account, onExit, challenge = null, onChallenge = null }) {
-  const R = useSprintRound(account, { challenge });
+export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null }) {
+  const R = useSprintRound(account, { challenge, initialLength });
   const {
     phase, direction, length, round, question, loaded, answers, result, records, error,
     saved, saving, unsavable, elapsed, photoUrls, challenge: contest,
@@ -246,6 +228,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     <div class="cab attract">
       <div class="eyebrow">Your quickest introductions</div>
       <h1 class="title">Speed round</h1>
+      ${guestSaved && html`<p class="small" role="status">Speed round saved: ${guestSaved.correct} of ${guestSaved.count} correct, ${guestSaved.score.toLocaleString()} points.</p>`}
       <p>Flick each classmate onto their name, as fast as you can. Every correct answer earns 1,000 points, with up to 999 extra for a fast round.</p>
       <p class="small">A perfect run sets your fastest time. The clock keeps running if you switch tabs.</p>
       ${settings}

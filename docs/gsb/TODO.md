@@ -1,6 +1,6 @@
 # GSB implementation checklist
 
-Status: implemented, tested, pushed and deployed on branch `gsb-classmates`, in worktree `parlor-gsb`. Email, portrait/name review, responsiveness improvements, and GSB ranking labels are verified live. The eight-face guest experiment is built and tested but disabled on real localhost and production. Physical iPhone testing and Claude's final visual design remain separate follow-ups.
+Status: the canonical source is `wesleyzhao/classmates`, locally `parlor-public-source`. The clean-repository and ten-face-entry release is tracked in [LAUNCH.md](LAUNCH.md). Older checklist entries below record prior releases; they do not describe the current guest flag. Physical iPhone testing remains a separate follow-up.
 
 - [x] Inspect Parlor and source data; establish 397-test baseline.
 - [x] Finalize the plan, scoring, full-deck practice, multiplayer ratings, tilt and access rules.
