@@ -105,6 +105,7 @@ function App() {
     // The four-corner round with its match settings stays reachable at /speed/classic; the game is two doors.
     [classic, setClassic] = useState(location.pathname === "/speed/classic"),
     [speedLength, setSpeedLength] = useState(null),
+    [speedAuto, setSpeedAuto] = useState(false),
     [room, setRoom] = useState(null),
     [error, setError] = useState("");
   const [direction, setDirection] = useState("mixed"),
@@ -248,16 +249,19 @@ function App() {
     setError("");
     setChallenge(null);
     setClassic(false);
+    setSpeedAuto(false);
     setScreen(next);
     setGuestOpen(false);
     history.pushState(null, "", next === "play" ? (site?.landingMode === "quick" ? "/games" : "/") : `/${next}`);
   };
   /** The speed screen for a round of ten or twenty. */
   const openSpeed = (length) => { setSpeedLength(length === "short" ? "short" : "quick"); navigate("speed"); };
-  // A speed challenge lives at /speed/CODE; the speed screen remounts for the code.
-  const openChallenge = (code) => {
+  // A speed challenge lives at /speed/CODE; the speed screen remounts for the code. A solo speed run is a room of
+  // one that starts its own count as soon as it opens (`auto`), so it ends on the same result screen as any other.
+  const openChallenge = (code, { auto = false } = {}) => {
     setError("");
     setChallenge(code);
+    setSpeedAuto(auto);
     setScreen("speed");
     setGuestOpen(false);
     if (location.pathname !== `/speed/${code}`) history.pushState(null, "", `/speed/${code}`);
@@ -270,6 +274,7 @@ function App() {
         ?.toUpperCase();
       const speed = speedCode(location.pathname);
       setChallenge(speed);
+      setSpeedAuto(false);
       setClassic(location.pathname === "/speed/classic");
       if (code && session?.nickname)
         run(async () => enter(await api(`rooms/${code}/join`, {})));
@@ -379,7 +384,7 @@ function App() {
               logout=${logout}
             />`
           : screen === "speed"
-            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}:${classic ? "classic" : speedLength || ""}`} account=${session} guestSaved=${guestSaved} classic=${classic} initialLength=${classic ? "short" : speedLength || "quick"} challenge=${challenge} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
+            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}:${classic ? "classic" : speedLength || ""}`} account=${session} guestSaved=${guestSaved} classic=${classic} initialLength=${classic ? "short" : speedLength || "quick"} challenge=${challenge} autoStart=${speedAuto} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
               : html`<p role="status">Opening speed round.</p>`
           : screen === "practice"
             ? html`<${Practice}

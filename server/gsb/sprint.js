@@ -171,7 +171,7 @@ async function lobbyAction(db, account, code, version, operation) {
   const [row] = await db.query("select gsb_duel_lobby($1,$2,$3,$4) as status", [code,account.id,version ?? null,operation]);
   const errors = {
     missing:[404,"challenge_missing","That challenge was not found or has ended."],
-    member:[403,"challenge_member","Join this duel first."],
+    member:[403,"challenge_member","Join this speed run first."],
     host:[403,"challenge_host","Only the host starts the count."],
     mode:[400,"challenge_mode","This challenge is played whenever you like."],
     version:[409,"challenge_version","The round changed. Reload if the shared questions do not refresh."],
@@ -265,11 +265,8 @@ export async function joinChallenge(db, account, deck, code) {
     await db.query("update gsb_sprint_runs set started_at=null,history=null,doc=jsonb_set(doc,'{historyEpoch}',to_jsonb($3::text)),expires_at=$2 where id=$1 and result is null", [run.id, challenge.expires_at,randomUUID()]);
     [run] = await own();
   }
-  if (challenge.mode === "duel" && challenge.starts_at && !run.started_at) {
-    // Joining a duel after the count: play it from now, on your own clock.
-    await db.query("update gsb_sprint_runs set started_at=now(),expires_at=now()+interval '1 hour' where id=$1 and result is null", [run.id]);
-    [run] = await own();
-  }
+  // Joining a duel after the count: the run waits, unstarted, for this player's own Start (see startSprint),
+  // so the photos load and the 3-2-1 runs before their clock does.
   const views = sequenceViews(run.doc.questions, deck, run.doc.choices ?? 4);
   if (!views) fail(410, "challenge_stale", "This challenge contains a card that is no longer available.");
   const records = await sprintRecords(db, account, deck, challenge.direction, challenge.length, run.doc.choices ?? 4);
@@ -299,14 +296,18 @@ async function ownedRun(db, account, id) {
 /** Arm a prepared run atomically; retries preserve its original start instant. */
 export async function startSprint(db, account, id) {
   const row = await ownedRun(db, account, id);
+  // A player who joined a speed run after its count starts alone: their clock begins four seconds out,
+  // the same 3-2-1 the room had, so their time is measured the same way.
+  let delay = "0 seconds";
   if (row.challenge_code) {
     const challenge = await loadChallenge(db,row.challenge_code);
     if (challenge.mode === "duel" && !challenge.starts_at)
-      fail(409,"challenge_not_started","The host starts this duel after everyone is ready.");
+      fail(409,"challenge_not_started","The host starts this speed run after everyone is ready.");
+    if (challenge.mode === "duel") delay = "4 seconds";
   }
   if (!row.result && new Date(row.expires_at).getTime() <= new Date(row.server_now).getTime())
     fail(410, "sprint_expired", "This sprint has expired.");
-  const [started] = await db.query("update gsb_sprint_runs set started_at=now(),expires_at=now()+interval '1 hour' where id=$1 and account_id=$2 and started_at is null and expires_at>now() returning started_at", [id, account.id]);
+  const [started] = await db.query("update gsb_sprint_runs set started_at=now()+$3::interval,expires_at=now()+$3::interval+interval '1 hour' where id=$1 and account_id=$2 and started_at is null and expires_at>now() returning started_at", [id, account.id, delay]);
   const [current] = started || row.started_at ? [] : await db.query("select started_at from gsb_sprint_runs where id=$1 and account_id=$2", [id, account.id]);
   const startedAt = started?.started_at ?? row.started_at ?? current?.started_at;
   if (!startedAt) fail(410, "sprint_expired", "This sprint has expired.");

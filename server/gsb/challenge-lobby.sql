@@ -11,10 +11,9 @@ begin
     update gsb_sprint_challenges set doc=candidate where code=c returning * into ch;
     update gsb_sprint_runs set doc=candidate,ready_at=null where challenge_code=c and started_at is null;
   end if;
+  -- A run joined after the count is not started here: the player's own start (sprint/start) sets its clock four seconds out.
   insert into gsb_sprint_runs(id,account_id,revision,cohort,direction,length,count,scoring_version,doc,expires_at,challenge_code,started_at)
-  values(run_id,a,ch.revision,ch.cohort,ch.direction,ch.length,ch.count,ch.scoring_version,ch.doc,
-    case when ch.starts_at is null then ch.expires_at else greatest(now(),ch.starts_at)+interval '1 hour' end,c,
-    case when ch.starts_at is null then null else greatest(now(),ch.starts_at) end);
+  values(run_id,a,ch.revision,ch.cohort,ch.direction,ch.length,ch.count,ch.scoring_version,ch.doc,ch.expires_at,c,null);
   return true;
 end $$;
 

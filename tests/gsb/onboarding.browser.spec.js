@@ -60,7 +60,9 @@ test("preview starts at countdown, captures email, creates nickname, saves guest
   await expect(signup.getByText(/Speed round saved:/)).toBeVisible();
   await expect(signup.getByRole("button", { name: "10 classmates", exact: true })).toHaveAttribute("aria-pressed", "true");
   await signup.getByRole("button", {name:"Start the clock"}).click();
-  await expect(signup.locator(".sprint-play .answer.door")).toHaveCount(2);
+  // Start the clock makes a room of one and runs its count before the doors show.
+  await expect(signup.locator(".countdown")).toBeVisible({ timeout: 15000 });
+  await expect(signup.locator(".sprint-play .answer.door")).toHaveCount(2, { timeout: 20000 });
   await signup.close(); await game.close();
   const nextTab = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Start a fresh visitor" }).click();

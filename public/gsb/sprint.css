@@ -257,8 +257,41 @@
 .sprint-duel .countdown .digit { font-family: var(--font-arcade); font-size: 96px; line-height: 1; color: var(--arcade-gold); text-shadow: 6px 6px 0 var(--arcade-gold-edge); animation: duel-pulse 1s steps(1) infinite; }
 .sprint-duel .countdown .digit.go { font-size: 54px; color: var(--arcade-good); text-shadow: 4px 4px 0 #0f5a30; animation: none; }
 .sprint-duel .countdown p { font-family: var(--font-pixel); font-size: 22px; color: var(--arcade-ink-2); text-transform: none; }
+.sprint-duel .countdown .digit.ready { font-size: 28px; color: var(--arcade-ink-2); text-shadow: 3px 3px 0 #000; animation: none; }
 @keyframes duel-pulse { 0% { transform: scale(1.15); } 40% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .sprint-duel .countdown .digit { animation: none; } }
+
+/* ---------- the speed screen: the name, the length, two ways in, and the classmate walking past ---------- */
+.sprint-home .title { font-size: 26px; line-height: 1.3; }
+.sprint-home .eyebrow { line-height: 1.8; }
+.sprint-stage .seg.wide { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.sprint-stage .seg.wide .segbtn { padding: 0 8px; min-height: 48px; white-space: nowrap; }
+.sprint-stage .launch { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.sprint-stage .launch .btn { width: 100%; min-height: 56px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.sprint-stage .launch .btn.btn-secondary { min-height: 56px; }
+.sprint-stage .launch .share-link { display: contents; }
+.sprint-stage .launch .share-link .share-note { flex-basis: auto; }
+/* the attract-mode blink on the button we want pressed */
+.sprint-stage .btn.glow { animation: sprint-glow 1.6s ease-in-out infinite; }
+.sprint-stage .btn.glow::before { content: "▶"; margin-right: 10px; animation: sprint-blink 1s steps(1) infinite; }
+@keyframes sprint-glow { 0%, 100% { box-shadow: 0 4px 0 var(--arcade-gold-edge), 0 0 0 0 rgba(254, 197, 29, 0); } 50% { box-shadow: 0 4px 0 var(--arcade-gold-edge), 0 0 18px 2px rgba(254, 197, 29, 0.45); } }
+@keyframes sprint-blink { 50% { opacity: 0; } }
+/* the parade: the game piece from the share preview crosses the space left over; tapping him starts the clock */
+.sprint-home .parade { position: relative; flex: 1 1 auto; min-height: 184px; overflow: hidden; margin: 0 -20px; }
+.sprint-home .mascot { position: absolute; bottom: 8px; left: -120px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; animation: mascot-cross 12s linear -4s infinite; }
+.sprint-home .mascot .mtag { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 9px 5px; background: #fff; color: var(--arcade-bg); border: 2px solid var(--arcade-bg); box-shadow: 0 0 0 2px var(--arcade-gold); }
+.sprint-home .mascot .tl { font-family: var(--font-arcade); font-size: 6px; color: var(--arcade-cardinal); text-transform: uppercase; line-height: 1; }
+.sprint-home .mascot .tn { font-family: var(--font-pixel); font-size: 20px; line-height: 0.9; text-shadow: var(--pixel-bold); }
+.sprint-home .mascot .mhead { width: 58px; height: 58px; border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: var(--arcade-panel); overflow: hidden; animation: mascot-hop 500ms steps(2) infinite; }
+.sprint-home .mascot .mhead img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; }
+.sprint-home .mascot .bod { display: block; width: 72px; height: 54px; margin-top: 3px; background: var(--body-down) center / 100% 100% no-repeat; image-rendering: pixelated; animation: sprint-frames 500ms steps(1) infinite; }
+.sprint-home .mascot:active { filter: brightness(1.2); }
+@keyframes mascot-cross { from { left: -120px; } to { left: 100%; } }
+@keyframes mascot-hop { 50% { transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .sprint-stage .btn.glow, .sprint-stage .btn.glow .cursor, .sprint-home .mascot, .sprint-home .mascot .mhead, .sprint-home .mascot .bod { animation: none; }
+  .sprint-home .mascot { left: 50%; translate: -50% 0; }
+}
 /* The guest introduction shares Speed's cabinet and controls, including its instant answer path. */
 .guest-countdown .cab { text-align: center; align-items: center; min-height: 100svh; justify-content: center; }
 .guest-count-hint { color: var(--arcade-ink-2); }

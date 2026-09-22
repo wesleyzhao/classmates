@@ -30,8 +30,9 @@ function Standings({ list, me }) {
 
 /** Speed-round view and accessible focus transitions; rules and persistence live in useSprintRound. */
 /** The speed screens. Two doors by default; `classic` is the four-corner round with its match settings, on its own path. */
-export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null, classic = false }) {
-  const R = useSprintRound(account, { challenge, initialLength, initialChoices: classic ? 4 : 2 });
+export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null, classic = false, autoStart = false }) {
+  // The speed screen makes its run when the player starts it (a solo run is a room of one), so it only fetches records.
+  const R = useSprintRound(account, { challenge, initialLength, initialChoices: classic ? 4 : 2, prepareOnOpen: classic || !!challenge });
   const {
     phase, direction, length, choices, round, question, loaded, answers, result, records, error,
     saved, saving, unsavable, elapsed, photoUrls, challenge: contest,
@@ -110,15 +111,20 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     setCreating(false);
     if (code && onChallenge) onChallenge(code);
   };
-  const startDuel = async () => {
-    if (dueling) return;
-    setDueling(true);
+  // Both buttons make the same room; "Start the clock" opens it as a room of one whose count starts on its own,
+  // so a solo run ends on the same screen as a race, with the link that lets a classmate play the same faces.
+  const [starting, setStarting] = useState(false);
+  const openRoom = async (auto) => {
+    if (dueling || starting) return;
+    (auto ? setStarting : setDueling)(true);
     const code = await createChallenge({ mode: "duel" });
-    setDueling(false);
-    if (code && onChallenge) onChallenge(code);
+    (auto ? setStarting : setDueling)(false);
+    if (code && onChallenge) onChallenge(code, { auto });
   };
-  // A duel has its own screens once the join says so.
-  if (contest?.mode === "duel") return html`<${DuelRound} account=${account} R=${R} onExit=${onExit} onChallenge=${onChallenge} />`;
+  const startDuel = () => openRoom(false);
+  const startSolo = () => openRoom(true);
+  // A speed run (a two-door room) has its own screens once the join says so.
+  if (contest?.mode === "duel") return html`<${DuelRound} account=${account} R=${R} onExit=${onExit} onChallenge=${onChallenge} autoStart=${autoStart} />`;
   const joinChallenge = (e) => {
     e.preventDefault();
     const code = joinCode.trim().toUpperCase();
@@ -229,31 +235,57 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     </div>
   </section>`;
 
-  return html`<section class="sprint-stage sprint-setup">
+  const codeForm = html`<form class="code-form" onSubmit=${joinChallenge}>
+    <span class="lbl">Have a challenge code?</span>
+    <div class="row"><input aria-label="Challenge code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" placeholder="ABCD" value=${joinCode} onInput=${(e) => setJoinCode(e.target.value)} />
+      <button class="btn btn-secondary" disabled=${joinCode.trim().length !== 4}>Join</button></div>
+  </form>`;
+  const footer = html`<p><button class="linkbtn" onClick=${onExit}>Back to games</button> <button type="button" class="linkbtn small" aria-pressed=${String(sound)} onClick=${() => { setSound(!sound); setSoundOn(!sound); }}>${sound ? "Sound is on" : "Sound is off"}</button></p>`;
+
+  if (classic) return html`<section class="sprint-stage sprint-setup">
     <div class="cab attract">
       <div class="eyebrow">Your quickest introductions</div>
       <h1 class="title">Speed round</h1>
       ${guestSaved && html`<p class="small" role="status">Speed round saved: ${guestSaved.correct} of ${guestSaved.count} correct, ${guestSaved.score.toLocaleString()} points.</p>`}
-      ${classic
-        ? html`<p>Flick each classmate onto their name, as fast as you can. Every correct answer earns 1,000 points, with up to 999 extra for a fast round.</p>`
-        : html`<p>Drop each face on the body with their name, left or right, as fast as you can. Every one right earns 1,000 points, with up to 999 extra for a fast round.</p>`}
+      <p>Flick each classmate onto their name, as fast as you can. Every correct answer earns 1,000 points, with up to 999 extra for a fast round.</p>
       <p class="small">A perfect run sets your fastest time. The clock keeps running if you switch tabs.</p>
       ${settings}
       ${error && html`<p class="notice error" role="alert">${error}</p>`}
       ${controls}
-      ${classic
-        ? html`<div class="row"><button type="button" class="btn btn-secondary" disabled=${creating} onClick=${startChallenge}>${creating ? "Making a code" : "Challenge classmates"}</button>
-            <span class="small">Same round for everyone who opens your code, whenever they like.</span></div>
-          <div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Start a duel"}</button>
-            <span class="small">Two doors, everyone on the same 3-2-1.</span></div>`
-        : html`<div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Challenge classmates"}</button>
-            <span class="small">The same ${count} classmates for everyone, on the same 3-2-1.</span></div>`}
-      <form class="code-form" onSubmit=${joinChallenge}>
-        <span class="lbl">Have a challenge code?</span>
-        <div class="row"><input aria-label="Challenge code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" placeholder="ABCD" value=${joinCode} onInput=${(e) => setJoinCode(e.target.value)} />
-          <button class="btn btn-secondary" disabled=${joinCode.trim().length !== 4}>Join</button></div>
-      </form>
-      <p><button class="linkbtn" onClick=${onExit}>Back to games</button> <button type="button" class="linkbtn small" aria-pressed=${String(sound)} onClick=${() => { setSound(!sound); setSoundOn(!sound); }}>${sound ? "Sound is on" : "Sound is off"}</button></p>
+      <div class="row"><button type="button" class="btn btn-secondary" disabled=${creating} onClick=${startChallenge}>${creating ? "Making a code" : "Challenge classmates"}</button>
+        <span class="small">Same round for everyone who opens your code, whenever they like.</span></div>
+      <div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Start a speed run"}</button>
+        <span class="small">Two doors, everyone on the same 3-2-1.</span></div>
+      ${codeForm}
+      ${footer}
+      <${SprintRecords} records=${records} choices=${round?.choices ?? choices} />
+    </div>
+  </section>`;
+
+  // The speed screen: the name, the length, and two ways in. The classmate walking across is the game piece
+  // from the share preview; tapping him starts the clock.
+  return html`<section class="sprint-stage sprint-setup sprint-home">
+    <div class="cab attract">
+      <div class="eyebrow">${GAME_NAME}</div>
+      <h1 class="title">Speed run</h1>
+      ${guestSaved && html`<p class="small" role="status">Speed round saved: ${guestSaved.correct} of ${guestSaved.count} correct, ${guestSaved.score.toLocaleString()} points.</p>`}
+      <div class="seg wide" role="group" aria-label="Round length">
+        ${Object.keys(LENGTHS).map((value) => html`<button key=${value} type="button" class="segbtn" aria-pressed=${String(length === value)} disabled=${!canChange} onClick=${() => changeLength(value)}>${LENGTHS[value]} classmates</button>`)}
+      </div>
+      ${error && html`<p class="notice error" role="alert">${error}</p>`}
+      <div class="launch">
+        <button type="button" class="btn btn-primary glow" disabled=${dueling || starting} onClick=${startDuel}>${dueling ? "Making a code" : "Challenge classmates"}</button>
+        <button type="button" class="btn btn-secondary" disabled=${dueling || starting} onClick=${startSolo}>${starting ? "Starting" : "Start the clock"}</button>
+      </div>
+      <div class="parade" aria-hidden="true">
+        <span class="mascot" onClick=${startSolo}>
+          <span class="mtag"><span class="tl">Hello, I'm</span><span class="tn">???</span></span>
+          <span class="mhead"><img src="/gsb/mascot.png" alt="" draggable=${false} /></span>
+          <span class="bod"></span>
+        </span>
+      </div>
+      ${codeForm}
+      ${footer}
       <${SprintRecords} records=${records} choices=${round?.choices ?? choices} />
     </div>
   </section>`;

@@ -317,6 +317,18 @@ test("a duel has two doors, starts on the host's count for everyone who is in, s
   const wrongTwo = duel.questions.map((q, i) => ({ questionId: q.id, choice: i < 2 ? String(1 - Number(q.correctChoice)) : q.correctChoice }));
   assert.equal((await request("/api/sprint/finish", { method: "POST", cookie: a.cookie, body: { id: duel.id, answers: wrongTwo, elapsedMs: 60 } })).status, 200);
   assert.deepEqual((await request(`/api/sprint/challenge/${duel.code}`, { cookie: b.cookie })).data.standings.find((s) => s.accountId === a.account.id).missed, [0, 1], "the others can see which two the host missed");
+  // A classmate who opens the link after the count is not started for them: their own Start puts their clock four seconds out.
+  const c = await login();
+  await request("/api/profile", { method: "POST", cookie: c.cookie, body: { nickname: "Late duelist" } });
+  const lateJoin = await request(`/api/sprint/challenge/${duel.code}/join`, { method: "POST", cookie: c.cookie });
+  assert.equal(lateJoin.status, 200); assert.equal(lateJoin.data.startedAt, null, "joining after the count does not start the clock");
+  assert.ok(lateJoin.data.startsAt > 0); assert.deepEqual(lateJoin.data.questions.map((q) => q.id), duel.questions.map((q) => q.id));
+  assert.equal(lateJoin.data.standings.find((s) => s.accountId === c.account.id).status, "waiting");
+  const lateStart = await request("/api/sprint/start", { method: "POST", cookie: c.cookie, body: { id: lateJoin.data.id } });
+  assert.equal(lateStart.status, 200);
+  assert.ok(lateStart.data.startedAt >= Date.now() + 3000 && lateStart.data.startedAt <= Date.now() + 4500, "a late joiner's own count is four seconds");
+  await new Promise((r) => setTimeout(r, Math.max(0, lateStart.data.startedAt - Date.now() + 50)));
+  assert.equal((await request("/api/sprint/finish", { method: "POST", cookie: c.cookie, body: { id: lateJoin.data.id, answers, elapsedMs: 40 } })).status, 200, "a late joiner finishes on their own clock");
   const rematch = await request(`/api/sprint/challenge/${duel.code}/rematch`, { method: "POST", cookie: a.cookie });
   assert.equal(rematch.status, 201); assert.equal(rematch.data.mode, "duel"); assert.notEqual(rematch.data.code, duel.code);
   assert.equal((await request(`/api/sprint/challenge/${duel.code}`, { cookie: b.cookie })).data.nextCode, rematch.data.code, "the old duel points at the rematch");

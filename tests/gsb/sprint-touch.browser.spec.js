@@ -16,11 +16,16 @@ test("twenty mobile taps advance once each without zoom or portrait requests", a
   await page.goto([...mail].reverse().find(item => item.email === email).url);
   await page.getByRole("button", { name: "Continue to Classmates" }).click();
   await page.getByRole("button", { name: "Save nickname" }).click();
-  // The speed screen prepares its round on its own; the response registered before opening it is the round played.
-  const prepared = page.waitForResponse(r => r.url().endsWith("/api/sprint/prepare") && r.ok());
+  // Start the clock makes a room of one and runs its count; the room it creates is the round played.
   await page.getByRole("button", { name: "20 classmates" }).tap();
-  const round = await (await prepared).json();
+  await expect(page.getByRole("button", { name: "20 classmates" })).toHaveAttribute("aria-pressed", "true");
+  const created = page.waitForResponse(r => r.url().endsWith("/api/sprint/challenge") && r.status() === 201);
   await page.getByRole("button", { name: "Start the clock" }).tap();
+  const round = await (await created).json();
+  expect(round.count).toBe(20);
+  await expect(page.locator(".countdown")).toBeVisible();
+  // Every photo is downloaded before the count; none may be requested once play is on.
+  await expect(page.locator(".sprint-play")).toBeVisible({ timeout: 20000 });
   const photos = [];
   const record = r => { if (/fixture|media/.test(r.url())) photos.push(r.url()); };
   page.on("request", record);

@@ -525,7 +525,7 @@ test("a duel starts both players on the host's count, shows the other's progress
   expect(duel.mode).toBe("duel");
   expect(duel.questions.every(q => q.choices.length === 2)).toBe(true);
   await expect(page).toHaveURL(new RegExp(`/speed/${duel.code}$`));
-  await expect(page.getByRole("button", { name: "Start the count" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start the clock" })).toBeEnabled();
   const other = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const guest = await other.newPage();
   await login(guest);
@@ -535,11 +535,11 @@ test("a duel starts both players on the host's count, shows the other's progress
   await expect(guest.getByRole("button", { name: "I'm ready" })).toBeVisible();
   // The host cannot start while somebody who joined has not tapped Ready, on screen or over the wire.
   await expect(page.locator(".seats li")).toHaveCount(2, { timeout: 10000 });
-  await expect(page.getByRole("button", { name: "Start the count" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start the clock" })).toBeDisabled();
   expect((await page.request.post(`/api/sprint/challenge/${duel.code}/begin`, { headers: { Origin: new URL(page.url()).origin }, data: {} })).status()).toBe(409);
   await guest.getByRole("button", { name: "I'm ready" }).click();
   await expect(page.getByText("is ready. The count is 3, 2, 1.")).toBeVisible({ timeout: 10000 });
-  await page.getByRole("button", { name: "Start the count" }).click();
+  await page.getByRole("button", { name: "Start the clock" }).click();
   await expect(page.locator(".countdown")).toBeVisible();
   await expect(guest.locator(".countdown")).toBeVisible({ timeout: 5000 });
   await expect(page.locator(".sprint-play")).toBeVisible({ timeout: 8000 });

@@ -25,9 +25,11 @@ export const LENGTHS = { quick: 10, short: 20 };
 /** Controller for one signed-in account. Mount with key=account.id (plus the challenge code, when there is one).
  * A challenge plays one shared sequence: the round comes from the join route, settings are fixed, and standings are polled.
  * @param {{id:string}} account
- * @param {{ challenge?: string | null, initialLength?: string, initialChoices?: number }} [options]
+ * With `prepareOnOpen` false the screen only fetches records; the run itself is made elsewhere (a solo speed run is a
+ * one-player room, see the speed screen), so no photos are downloaded for a round that will never be played.
+ * @param {{ challenge?: string | null, initialLength?: string, initialChoices?: number, prepareOnOpen?: boolean }} [options]
  */
-export function useSprintRound(account, { challenge = null, initialLength = "short", initialChoices = 2 } = {}) {
+export function useSprintRound(account, { challenge = null, initialLength = "short", initialChoices = 2, prepareOnOpen = true } = {}) {
   const [history] = useState(() => createFaceCheckpoints(account.id));
   const storageKey = challenge ? `${account.id}:${challenge}` : account.id;
   const [restored] = useState(() => readPending(storageKey));
@@ -49,8 +51,10 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     [standings, setStandings] = useState(null),
     [challengeInfo, setChallengeInfo] = useState(null),
     [goAt, setGoAt] = useState(null);
-  // A duel starts on the server's instant; the offset turns it into this device's clock.
-  const offset = useRef(0), duel = useRef(false);
+  // A duel starts on the server's instant; the offset turns it into this device's clock. A player who joins after
+  // that instant is late: the room's start is not theirs, and only their own run's start counts them in.
+  const offset = useRef(0), duel = useRef(false), late = useRef(false);
+  const startOf = (roomStart, runStart) => (late.current ? runStart || null : Math.max(roomStart ?? 0, runStart ?? 0) || null);
   const media = useRef(null), abort = useRef(null), alive = useRef(true),
     current = useRef(null), clock = useRef(null), saveLock = useRef(false),
     preparing = useRef(false), next = useRef(null), ticket = useRef(0),
@@ -165,8 +169,9 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
       if (challenge) {
         setDirection(data.direction); setLength(data.length); setChoices(data.choices ?? 4); setStandings(data.standings);
         duel.current = data.mode === "duel";
+        late.current = duel.current && !!data.startsAt && !data.startedAt && !data.result;
         if (typeof data.now === "number") offset.current = data.now - Date.now();
-        setChallengeInfo({ code: data.code, hostId: data.hostId, expiresAt: data.expiresAt, mode: data.mode, choices: data.choices, selectionVersion: data.selectionVersion, startsAt: Math.max(data.startsAt ?? 0,data.startedAt ?? 0) || null, startedAt: data.startedAt, nextCode: data.nextCode });
+        setChallengeInfo({ code: data.code, hostId: data.hostId, expiresAt: data.expiresAt, mode: data.mode, choices: data.choices, selectionVersion: data.selectionVersion, startsAt: startOf(data.startsAt, data.startedAt), startedAt: data.startedAt, nextCode: data.nextCode, late: late.current });
         if (data.result) {
           // This account already finished the challenge: show the saved result and the standings.
           setResult(data.result); setSaved(true); setPhase("result");
@@ -189,6 +194,13 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
   const [wanted, setWanted] = useState(0);
   useEffect(() => {
     if (current.current.phase !== "setup" || pending.current) return undefined;
+    if (!prepareOnOpen) {
+      // Records only: the screen's run is made when the player starts it.
+      const c = current.current, controller = new AbortController();
+      api(`sprint/records?direction=${c.direction}&length=${c.length}&choices=${c.choices}`, undefined, { signal: controller.signal })
+        .then((data) => alive.current && setRecords(data)).catch(() => {});
+      return () => controller.abort();
+    }
     const timer = setTimeout(prepare, wanted ? 400 : 0);
     return () => clearTimeout(timer);
   }, [wanted]);
@@ -235,7 +247,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
           }
           setStandings(view.standings);
           if (typeof view.now === "number") offset.current = view.now - Date.now();
-          setChallengeInfo((info) => info ? { ...info, startsAt: Math.max(view.startsAt ?? 0,current.current.round?.startedAt ?? 0) || null, nextCode: view.nextCode } : info);
+          setChallengeInfo((info) => info ? { ...info, startsAt: startOf(view.startsAt, current.current.round?.startedAt), nextCode: view.nextCode } : info);
         }
       } catch (e) { if (active && e.status === 404) setError(e.message); }
       if (active) timer = setTimeout(poll, every());
@@ -286,8 +298,16 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     if (current.current.phase !== "ready") return;
     current.current.phase = "arming"; setPhase("arming"); setError("");
     try {
-      await api("sprint/start", { id: round.id });
-      if (alive.current) { buffer.current?.consume(round.id); setPhase("playing"); }
+      const view = await api("sprint/start", { id: round.id });
+      if (!alive.current) return;
+      if (duel.current) {
+        // A late joiner's own count: the server put this run's start four seconds out, and the count runs to it.
+        current.current.phase = "ready"; setPhase("ready");
+        setRound((r) => (r ? { ...r, startedAt: view.startedAt } : r));
+        setChallengeInfo((info) => (info ? { ...info, startsAt: view.startedAt, startedAt: view.startedAt } : info));
+        return;
+      }
+      buffer.current?.consume(round.id); setPhase("playing");
     } catch (e) { if (alive.current) {
       if (e.status === 410) { release(); setRound(null); }
       setPhase(e.status === 410 ? "setup" : "ready"); setError(e.message);

@@ -40,15 +40,25 @@ function Race({ account, contest, round, answered, photoUrls }) {
   <p class="lead">${lead()}</p>`;
 }
 
-/** The speed duel screens. `R` is the round controller from useSprintRound. */
-export function DuelRound({ account, R, onExit, onChallenge }) {
-  const { phase, round, question, loaded, answers, result, error, saved, saving, unsavable, elapsed, photoUrls, challenge: contest, choose, save, ready, begin, rematch, prepare } = R;
+/** The speed run screens. `R` is the round controller from useSprintRound. With `autoStart` the host's count
+ * starts on its own as soon as the round is ready: a solo run is this room with nobody else in it yet. */
+export function DuelRound({ account, R, onExit, onChallenge, autoStart = false }) {
+  const { phase, round, question, loaded, answers, result, error, saved, saving, unsavable, elapsed, photoUrls, challenge: contest, choose, save, ready, begin, rematch, prepare, start } = R;
   const playRegion = useRef(null), resultHeading = useRef(null), arena = useRef(null), fx = useRef(null), piece = useRef(null);
   const [tick, setTick] = useState(0), [rematching, setRematching] = useState(false), [sound, setSoundOn] = useState(() => isSoundOn());
   const soundSwitch = html`<button type="button" class="linkbtn small" aria-pressed=${String(sound)} onClick=${() => { setSound(!sound); setSoundOn(!sound); }}>${sound ? "Sound is on" : "Sound is off"}</button>`;
   const code = contest?.code, host = contest?.hostId === account.id;
   const me = (contest?.standings || []).find((s) => s.accountId === account.id);
   const others = (contest?.standings || []).filter((s) => s.accountId !== account.id);
+  const count = round?.count ?? 10;
+  // Late: the room's count ran before this player joined, so they start their own (start() puts it four seconds out).
+  const late = !!contest?.late && (!contest?.startedAt || phase === "count");
+  const fired = useRef(false);
+  useEffect(() => {
+    if (!autoStart || !host || phase !== "ready" || contest?.startsAt || others.length || fired.current) return;
+    fired.current = true;
+    begin();
+  }, [autoStart, host, phase, contest?.startsAt, others.length]);
   // The count ticks ten times a second so the digits and the GO land on the instant.
   useEffect(() => {
     if (phase !== "count" && !(phase === "playing" && contest?.goAt && Date.now() - contest.goAt < 700)) return undefined;
@@ -89,27 +99,29 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
   const link = `${location.origin}/speed/${code}`;
   const invite = html`<${ShareLink} url=${link} title=${GAME_NAME} text=${`First to name all ${round?.count ?? 10} classmates wins...`} />`;
   // From the result: the score is the message, and the link is the same ten people.
-  const scoreShare = result && html`<${ShareLink} url=${link} title=${GAME_NAME} label="Share my score" text=${`I got ${result.correct} out of ${result.count} faces in ${(result.elapsedMs / 1000).toFixed(1)} seconds. Your turn`} />`;
+  const scoreShare = result && html`<${ShareLink} url=${link} title=${GAME_NAME} label="Share my score" copyLabel="Copy the link" text=${`I got ${result.correct} out of ${result.count} faces in ${(result.elapsedMs / 1000).toFixed(1)} seconds. Your turn`} />`;
   const seats = html`<ol class="seats" aria-label="Who is in">
     ${(contest?.standings || []).map((s) => html`<li key=${s.accountId} class=${`seat ${s.ready || s.accountId === contest.hostId ? "ready" : ""} ${s.accountId === account.id ? "me" : ""}`}>
       <span class="who">${s.nickname}${s.accountId === contest.hostId ? " · host" : ""}</span>
       <span class="how">${s.result ? "Finished" : s.status === "playing" ? "Playing" : s.ready || s.accountId === contest.hostId ? "Ready" : "Not ready yet"}</span>
     </li>`)}
   </ol>`;
-  const followRematch = async () => {
+  // The rematch is a new room with the same settings; alone, it starts its own count like the first run did.
+  const followRematch = async (auto = false) => {
     if (rematching) return;
     setRematching(true);
     const next = contest?.nextCode || (await rematch());
     setRematching(false);
-    if (next && onChallenge) onChallenge(next);
+    if (next && onChallenge) onChallenge(next, { auto });
   };
 
-  let count = null;
+  let countdown = null;
   if (phase === "count" || (phase === "playing" && contest?.goAt && Date.now() - contest.goAt < 700)) {
-    const left = contest?.goAt ? Math.ceil((contest.goAt - Date.now()) / 1000) : 3;
-    count = html`<div class="countdown" role="status" aria-live="assertive">
-      <div class="eyebrow">Everyone at once</div>
-      <div class=${`digit ${left <= 0 ? "go" : ""}`} key=${left}>${left <= 0 ? "GO" : Math.min(3, left)}</div>
+    // The start is four seconds out: a beat of "Ready", then 3, 2, 1 of one second each, then GO.
+    const left = contest?.goAt ? Math.ceil((contest.goAt - Date.now()) / 1000) : 4;
+    countdown = html`<div class="countdown" role="status" aria-live="assertive">
+      <div class="eyebrow">${others.length ? "Everyone at once" : "Speed run"}</div>
+      <div class=${`digit ${left <= 0 ? "go" : left > 3 ? "ready" : ""}`} key=${Math.min(4, left)}>${left <= 0 ? "GO" : left > 3 ? "Ready" : left}</div>
       <p>Drop each face on the body with their name.</p>
     </div>`;
   }
@@ -117,7 +129,7 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
   if (phase === "playing" && question && photoUrls) {
     const right = answers.filter((a, i) => a.choice === round.questions[i].correctChoice).length;
     const strip = answerSummary(round, answers, photoUrls).slice(0, 3);
-    return html`<section ref=${playRegion} class="sprint-stage sprint-play sprint-duel" tabindex="-1" aria-label="Speed duel" data-question-id=${question.id}>
+    return html`<section ref=${playRegion} class="sprint-stage sprint-play sprint-duel" tabindex="-1" aria-label="Speed run" data-question-id=${question.id}>
       <div class="cab">
         <header class="sprint-hud">
           <div class="col"><span class="lbl">Right</span><span class="val">${pad2(right)}</span></div>
@@ -141,7 +153,7 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
         <div class="strip">${strip.length
           ? strip.map((e) => html`<span key=${e.id} class="chip ${e.ok ? "ok" : "no"}"><span class="thumb">${e.thumb && html`<img src=${e.thumb} alt="" />`}</span><span class="cname">${e.name}</span></span>`)
           : html`<span class="hint">Flick the face down onto their body</span>`}</div>
-        ${count}
+        ${countdown}
       </div>
     </section>`;
   }
@@ -167,7 +179,7 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
     const heading = !result ? "Your result" : others.length === 0 ? "Round cleared." : others.every((s) => s.result) ? (winner?.accountId === account.id ? "You take it." : `${winner?.nickname} takes it.`) : "Waiting for the others.";
     return html`<section class="sprint-stage sprint-result sprint-duel">
       <div class="cab attract">
-        <div class="eyebrow">Duel ${code}</div>
+        <div class="eyebrow">Speed run ${code}</div>
         <h1 ref=${resultHeading} tabindex="-1" class="title">${heading}</h1>
         ${result && html`<p class="big">${result.correct} of ${result.count} correct in <strong>${seconds(result.elapsedMs)}</strong>, ${result.score.toLocaleString()} points.</p>`}
         <p role="status" class="small">${saved ? "Saved to your speed records." : saving ? "Saving your result." : unsavable ? "This result could not be saved. You can start a fresh round." : "This result has not been saved yet."}</p>
@@ -178,12 +190,19 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
           <span class="who">${s.nickname}</span>
           <span class="how">${s.result ? `${seconds(s.result.elapsedMs)} · ${s.result.correct}/${s.result.count} · ${s.result.score.toLocaleString()} pts` : s.status === "playing" ? `Still playing, ${s.progress.index} of ${round?.count ?? 10}` : "Not started"}</span>
         </li>`)}</ol>
-        <div class="row">
-          ${scoreShare}
-          ${contest?.nextCode ? html`<button class="btn btn-secondary" onClick=${followRematch}>Join the rematch</button>`
-            : html`<button class="btn btn-secondary" disabled=${rematching} onClick=${followRematch}>${rematching ? "Making a code" : "Rematch"}</button>`}
-          <button class="linkbtn" onClick=${onExit}>Back to games</button>
-        </div>
+        ${others.length === 0
+          // Alone in the room: the link is the challenge (same faces, their own count), and Play again is a fresh room of one.
+          ? html`<div class="launch">
+              ${result && html`<${ShareLink} url=${link} title=${GAME_NAME} label="Challenge a classmate" className="btn btn-primary glow" copyLabel="Copy challenge link" copyClassName="btn btn-secondary" text=${`I named ${result.correct} of ${result.count} classmates in ${(result.elapsedMs / 1000).toFixed(1)} seconds. Same ${result.count} faces, your turn`} />`}
+              <button class="btn btn-secondary" disabled=${rematching} onClick=${() => followRematch(true)}>${rematching ? "Starting" : "Play again"}</button>
+            </div>
+            <p><button class="linkbtn" onClick=${onExit}>Back to games</button></p>`
+          : html`<div class="row">
+              ${scoreShare}
+              ${contest?.nextCode ? html`<button class="btn btn-secondary" onClick=${() => followRematch(false)}>Join the rematch</button>`
+                : html`<button class="btn btn-secondary" disabled=${rematching} onClick=${() => followRematch(false)}>${rematching ? "Making a code" : "Rematch"}</button>`}
+              <button class="linkbtn" onClick=${onExit}>Back to games</button>
+            </div>`}
         ${pairs.length > 0 && html`<section class="review" aria-label="Your answers">
           ${missed.length > 0 && html`<h2 class="no">You missed (${missed.length})</h2><div class="pairs">${missed.map(pair)}</div>`}
           ${got.length > 0 && html`<h2>You got right (${got.length})</h2><div class="pairs">${got.map(pair)}</div>`}
@@ -197,28 +216,60 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
     </section>`;
   }
 
+  const loading = phase === "loading" ? html`<p role="status">Getting the ${count === 10 ? "ten" : count} ready${loaded[1] ? `: ${loaded[0]} of ${loaded[1]}` : ""}.</p>`
+    : phase === "setup" && !error ? html`<p role="status">Getting the round ready.</p>`
+    : phase === "setup" ? html`<button class="btn btn-primary" onClick=${prepare}>Get the round ready</button>` : null;
+
+  // A room of one that starts itself: nothing to read, just the photos loading and then the count.
+  if (autoStart && others.length === 0 && !late) return html`<section class="sprint-stage sprint-setup sprint-duel">
+    <div class="cab attract">
+      <div class="eyebrow">${GAME_NAME}</div>
+      <h1 class="title">Speed run</h1>
+      ${loading}
+      ${error && html`<p class="notice error" role="alert">${error}</p>`}
+      ${error && phase === "ready" && html`<button class="btn btn-primary" onClick=${begin}>Start the clock</button>`}
+      <p><button class="linkbtn" onClick=${onExit}>Back to games</button> ${soundSwitch}</p>
+      ${countdown}
+    </div>
+  </section>`;
+
+  // Late to the room: the others have played (or are playing); this player starts their own count.
+  if (late) return html`<section class="sprint-stage sprint-setup sprint-duel">
+    <div class="cab attract">
+      <div class="eyebrow">Speed run · ${count} classmates</div>
+      <h1 class="title">Challenge <span class="challenge-code">${code}</span></h1>
+      <p>Same ${count} faces they had. Drop each face on the body with their name, left or right.</p>
+      <ol class="versus" aria-label="Standings">${(contest?.standings || []).map((s) => html`<li key=${s.accountId} class=${s.accountId === account.id ? "me" : ""}>
+        <span class="rank"></span>
+        <span class="who">${s.nickname}</span>
+        <span class="how">${s.result ? `${seconds(s.result.elapsedMs)} · ${s.result.correct}/${s.result.count}` : s.status === "playing" ? "Playing now" : s.accountId === account.id ? "Your turn" : "Not started"}</span>
+      </li>`)}</ol>
+      ${error && html`<p class="notice error" role="alert">${error}</p>`}
+      ${loading ?? html`<button class="btn btn-primary" disabled=${phase !== "ready"} onClick=${start}>${phase === "arming" ? "Starting" : "Start the clock"}</button>`}
+      <p><button class="linkbtn" onClick=${onExit}>Back to games</button> ${soundSwitch}</p>
+      ${countdown}
+    </div>
+  </section>`;
+
   // The lobby: who is in, who is ready, and the host's count.
   // The count waits for everyone who has joined; alone, the host may start whenever.
   const notReady = others.filter((s) => !s.ready && !s.result);
   const canStart = host && phase === "ready" && notReady.length === 0;
   return html`<section class="sprint-stage sprint-setup sprint-duel">
     <div class="cab attract">
-      <div class="eyebrow">Speed duel · 10 classmates · two doors</div>
-      <h1 class="title">Duel <span class="challenge-code">${code}</span></h1>
-      <p>Same ten people for everyone, same count. Drop each face on the body with their name, bottom-left or bottom-right.</p>
+      <div class="eyebrow">Speed run · ${count} classmates</div>
+      <h1 class="title">Challenge <span class="challenge-code">${code}</span></h1>
+      <p>Same ${count} people for everyone, same count. Drop each face on the body with their name, left or right.</p>
       <div class="row">${invite}</div>
       <h2 class="lbl-heading">Who is in</h2>
       ${seats}
       ${error && html`<p class="notice error" role="alert">${error}</p>`}
-      ${phase === "loading" ? html`<p role="status">Getting the ten ready${loaded[1] ? `: ${loaded[0]} of ${loaded[1]}` : ""}.</p>`
-        : phase === "setup" && !error ? html`<p role="status">Getting the round ready.</p>`
-        : phase === "setup" ? html`<button class="btn btn-primary" onClick=${prepare}>Get the round ready</button>`
-        : host ? html`<button class="btn btn-primary" disabled=${!canStart} onClick=${begin}>Start the count</button>
+      ${loading ?? (host ? html`<button class="btn btn-primary" disabled=${!canStart} onClick=${begin}>Start the clock</button>
           <p class="small">${!others.length ? "Share the link, or start alone." : notReady.length ? `Waiting for ${notReady.map((s) => s.nickname).join(", ")} to tap Ready.` : `${others.length === 1 ? others[0].nickname + " is" : "Everyone is"} ready. The count is 3, 2, 1.`}</p>`
-        : me?.ready ? html`<p role="status">You are ready. ${(contest?.standings || []).find((s) => s.accountId === contest.hostId)?.nickname || "The host"} starts the count.</p>`
-        : html`<button class="btn btn-primary" onClick=${ready}>I'm ready</button>`}
+        : me?.ready ? html`<p role="status">You are ready. ${(contest?.standings || []).find((s) => s.accountId === contest.hostId)?.nickname || "The host"} starts the clock.</p>`
+        : html`<button class="btn btn-primary" onClick=${ready}>I'm ready</button>`)}
       <p><button class="linkbtn" onClick=${onExit}>Back to games</button> ${soundSwitch}</p>
-      ${count}
+      ${countdown}
     </div>
   </section>`;
 }
