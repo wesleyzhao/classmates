@@ -326,7 +326,9 @@ function App() {
       </button>
     </div>`}
     ${!loaded
-      ? html`<p class="loading" role="status">Opening Classmates.</p>`
+      ? ["/", "/guest"].includes(location.pathname) && !loginToken
+        ? html`<section class="sprint-stage sprint-opening" aria-busy="true"><span class="sr-only" role="status">Opening Classmates.</span></section>`
+        : html`<p class="loading" role="status">Opening Classmates.</p>`
       : showGuestRound
         ? Guest ? html`<${Guest} signInForm=${html`<${Login} compact=${true} site=${site} emailReady=${emailReady} run=${run} />`} onSignIn=${() => {
             setGuestOpen(false);

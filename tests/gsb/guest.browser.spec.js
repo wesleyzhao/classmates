@@ -139,10 +139,15 @@ test("countdown overlaps preload; rapid taps have no network pauses and duplicat
 });
 
 test("guest entry shows the countdown while the round request is pending, without a start screen", async ({ page }) => {
-  let release = () => {};
+  let release = () => {}, releaseSession = () => {};
   const held = new Promise(resolve => { release = () => resolve(undefined); });
+  const sessionHeld = new Promise(resolve => { releaseSession = () => resolve(undefined); });
+  await page.route("**/api/session", async route => { await sessionHeld; await route.continue(); });
   await page.route("**/api/guest/start", async route => { await held; await route.continue(); });
   await page.goto("/");
+  await expect(page.locator(".sprint-opening")).toBeVisible();
+  await expect(page.locator(".guest-countdown")).toHaveCount(0);
+  releaseSession();
   await expect(page.getByRole("status", { name: "Starting in 3" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Start the clock", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "10 classmates", exact: true })).toHaveCount(0);
