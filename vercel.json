@@ -4,13 +4,22 @@
   "outputDirectory": "output/site",
   "functions": {
     "api/index.js": {
-      "maxDuration": 15
+      "maxDuration": 15,
+      "includeFiles": "public/gsb/index.html"
     }
   },
   "rewrites": [
     {
       "source": "/api/:route*",
       "destination": "/api/index"
+    },
+    {
+      "source": "/speed/:code([A-Za-z]{4})",
+      "destination": "/api/index?shell=speed&code=:code"
+    },
+    {
+      "source": "/r/:code([A-Za-z]{4})",
+      "destination": "/api/index?shell=room&code=:code"
     },
     {
       "source": "/((?!api/).*)",

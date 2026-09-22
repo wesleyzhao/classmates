@@ -85,6 +85,14 @@ async function handle(req, res, handler = api) {
     await handler(req, res);
     return;
   }
+  // Classmates' shared links get their preview tags from the function, the way vercel.json rewrites them.
+  const invite = process.env.APP_PROFILE === 'gsb' && url.pathname.match(/^\/(speed|r)\/([a-z]{4})$/i);
+  if (invite) {
+    req.url = `/api/index?shell=${invite[1] === 'r' ? 'room' : 'speed'}&code=${invite[2].toUpperCase()}`;
+    req.query = {};
+    await handler(req, res);
+    return;
+  }
 
   await serveStatic(res, decodePath(url.pathname));
 }

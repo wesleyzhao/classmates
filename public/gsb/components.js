@@ -15,9 +15,9 @@ export { api } from "./api.js";
  * An invite on its way: on a phone (and a Mac with a share sheet) "Share invite link" opens the system
  * share sheet, which is how a code reaches a group chat; "Copy invite link" is always there too and says
  * "Link copied" for a moment. A cancelled share is not a failure and falls through to nothing.
- * @param {{ url: string, title: string, text: string, className?: string }} props
+ * @param {{ url: string, title: string, text: string, className?: string, label?: string }} props
  */
-export function ShareLink({ url, title, text, className = "btn btn-secondary" }) {
+export function ShareLink({ url, title, text, className = "btn btn-secondary", label = "Share invite link" }) {
   const [copied, setCopied] = useState(false), [note, setNote] = useState("");
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const copy = async () => {
@@ -36,7 +36,7 @@ export function ShareLink({ url, title, text, className = "btn btn-secondary" })
     catch (e) { if (!(e && /** @type {any} */ (e).name === "AbortError")) await copy(); }
   };
   return html`<span class="share-link">
-    ${canShare && html`<button type="button" class=${className.replace("btn-secondary", "btn-primary")} onClick=${share}>Share invite link</button>`}
+    ${canShare && html`<button type="button" class=${className.replace("btn-secondary", "btn-primary")} onClick=${share}>${label}</button>`}
     <button type="button" class=${className} onClick=${copy}>${copied ? "Link copied" : canShare ? "Copy link" : "Copy invite link"}</button>
     ${note && html`<span class="small muted share-note">${note}</span>`}
   </span>`;

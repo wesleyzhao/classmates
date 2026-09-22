@@ -86,7 +86,10 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
     return () => document.removeEventListener("keydown", onKey, true);
   }, [phase, question ? question.id : ""]);
 
-  const invite = html`<${ShareLink} url=${`${location.origin}/speed/${code}`} title=${GAME_NAME} text=${`Duel me in ${GAME_NAME} Ten classmates, two doors, same count. The code is ${code}.`} />`;
+  const link = `${location.origin}/speed/${code}`;
+  const invite = html`<${ShareLink} url=${link} title=${GAME_NAME} text=${`First to name all ${round?.count ?? 10} classmates wins...`} />`;
+  // From the result: the score is the message, and the link is the same ten people.
+  const scoreShare = result && html`<${ShareLink} url=${link} title=${GAME_NAME} label="Share my score" text=${`I got ${result.correct} out of ${result.count} faces in ${(result.elapsedMs / 1000).toFixed(1)} seconds. Your turn`} />`;
   const seats = html`<ol class="seats" aria-label="Who is in">
     ${(contest?.standings || []).map((s) => html`<li key=${s.accountId} class=${`seat ${s.ready || s.accountId === contest.hostId ? "ready" : ""} ${s.accountId === account.id ? "me" : ""}`}>
       <span class="who">${s.nickname}${s.accountId === contest.hostId ? " · host" : ""}</span>
@@ -176,8 +179,9 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
           <span class="how">${s.result ? `${seconds(s.result.elapsedMs)} · ${s.result.correct}/${s.result.count} · ${s.result.score.toLocaleString()} pts` : s.status === "playing" ? `Still playing, ${s.progress.index} of ${round?.count ?? 10}` : "Not started"}</span>
         </li>`)}</ol>
         <div class="row">
-          ${contest?.nextCode ? html`<button class="btn btn-primary" onClick=${followRematch}>Join the rematch</button>`
-            : html`<button class="btn btn-primary" disabled=${rematching} onClick=${followRematch}>${rematching ? "Making a code" : "Rematch"}</button>`}
+          ${scoreShare}
+          ${contest?.nextCode ? html`<button class="btn btn-secondary" onClick=${followRematch}>Join the rematch</button>`
+            : html`<button class="btn btn-secondary" disabled=${rematching} onClick=${followRematch}>${rematching ? "Making a code" : "Rematch"}</button>`}
           <button class="linkbtn" onClick=${onExit}>Back to games</button>
         </div>
         ${pairs.length > 0 && html`<section class="review" aria-label="Your answers">

@@ -8,6 +8,7 @@ import { GUEST_ROUND_SIZE, guestConfig, getGuestRun, startGuestRun, finishGuestR
 import { faceHistories, faceSummary } from "./face-history.js";
 import { publicSiteConfig } from './site-config.js';
 import { CAMPUS_LIMITS, loginEmailDailyLimit } from './launch-limits.js';
+import { inviteFor, inviteShell } from './invite.js';
 import { createChallenge, joinChallenge, challengeView, rematchChallenge, readyChallenge, beginChallenge, progressChallenge, prepareSprint, startSprint, finishSprint, sprintRecords, checkpointSprint } from "./sprint.js";
 import {
   authenticate,
@@ -50,6 +51,16 @@ export function createGsbHandler(deps = {}) {
         if (!(await db.store.bumpLimit(`gsb:${key}`, ms, max)).allowed)
           bad(429, "rate_limited", message);
       };
+      // Public invitation metadata contains only the host nickname and game code.
+      if (method === "GET" && ["speed", "room"].includes(q.shell)) {
+        const invite = await inviteFor(db, q.shell, q.code).catch(() => null);
+        const html = await inviteShell(invite);
+        res.setHeader("Cache-Control", "public, max-age=60");
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.statusCode = 200;
+        res.end(html);
+        return;
+      }
       if (method === "GET" && p[0] === "health")
         return sendJson(res, 200, {
           ok: true,

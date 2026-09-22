@@ -130,7 +130,8 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     <div class="form-field"><span>Round</span><div class="seg" role="group" aria-label="Round length">
       ${Object.keys(LENGTHS).map((value) => html`<button key=${value} type="button" class="segbtn" aria-pressed=${String(length === value)} disabled=${!canChange} onClick=${() => changeLength(value)}>${LENGTHS[value]} classmates</button>`)}
     </div></div>`;
-  const inviteButton = html`<${ShareLink} url=${inviteLink()} title=${GAME_NAME} text=${`Play my speed challenge in ${GAME_NAME} The code is ${contest?.code || challenge}.`} />`;
+  const inviteButton = html`<${ShareLink} url=${inviteLink()} title=${GAME_NAME} text=${`Same ${count} classmates for both of us. Your turn`} />`;
+  const scoreShare = challenge && result && html`<${ShareLink} url=${inviteLink()} title=${GAME_NAME} label="Share my score" text=${`I got ${result.correct} out of ${result.count} faces in ${(result.elapsedMs / 1000).toFixed(1)} seconds. Your turn`} />`;
   // A round prepares on its own when the screen opens or a setting changes; the button only appears after a failure.
   const controls = phase === "loading" ? html`<p role="status">Getting your photos ready${loaded[1] ? `: ${loaded[0]} of ${loaded[1]}` : ""}.</p>`
     : phase === "ready" || phase === "arming" ? html`<p class="small">${round.count} classmates are ready. Your timer starts with the first question.</p>
@@ -203,7 +204,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
         ${error && html`<p class="notice error" role="alert">${error}</p>`}
         ${!(saved || unsavable) && html`<button class="btn btn-primary" disabled=${saving} onClick=${save}>Retry saving result</button>`}
         ${challenge && html`<h2 class="lbl-heading">Standings</h2><${Standings} list=${contest?.standings} me=${account.id} />`}
-        <div class="row">${challenge ? inviteButton : html`<button class="btn btn-primary" disabled=${!(saved || unsavable)} onClick=${prepare}>Play again</button>`}
+        <div class="row">${challenge ? scoreShare : html`<button class="btn btn-primary" disabled=${!(saved || unsavable)} onClick=${prepare}>Play again</button>`}
           <button class="linkbtn" onClick=${onExit}>Back to games</button></div>
         ${pairs.length > 0 && html`<section class="review" aria-label="Your answers">
           ${missed.length > 0 && html`<h2 class="no">Missed (${missed.length})</h2><div class="pairs">${missed.map(pair)}</div>`}

@@ -360,3 +360,23 @@ test("two-choice solo records stay separate from four-choice records and reuse b
   assert.equal(ownTwo.data.fastestPerfect.correct,10);
   for (const choices of [3, "2", null]) assert.equal((await request("/api/sprint/prepare",{method:"POST",cookie:a.cookie,body:{direction:"face",length:"quick",choices}})).status,400);
 });
+
+test("a shared link's page carries a preview that names who is asking, and a plain page otherwise", async () => {
+  const a = await login();
+  await request("/api/profile", { method: "POST", cookie: a.cookie, body: { nickname: "Preview host" } });
+  const created = await request("/api/sprint/challenge", { method: "POST", cookie: a.cookie, body: { direction: "face", length: "quick", mode: "duel" } });
+  const page = async (query) => { const r = await fetch(`${base}/api/index?${query}`); return { status: r.status, type: r.headers.get("content-type"), html: await r.text() }; };
+  const duel = await page(`shell=speed&code=${created.data.code.toLowerCase()}`);
+  assert.equal(duel.status, 200); assert.match(duel.type, /text\/html/);
+  assert.match(duel.html, /<meta property="og:title" content="Do you know your classmates better than Preview host\?"/);
+  assert.match(duel.html, /<meta name="twitter:title" content="Do you know your classmates better than Preview host\?"/);
+  assert.match(duel.html, /<meta property="og:description" content="First to name all 10 classmates wins\."/);
+  assert.match(duel.html, new RegExp(`<meta property="og:url" content="${base}/speed/${created.data.code}"`));
+  assert.match(duel.html, /<title>Do You Really Not Know Their Name Yet\?\?<\/title>/, "the tab keeps the game's name");
+  const plain = await page("shell=speed&code=ZZZZ");
+  assert.equal(plain.status, 200);
+  assert.match(plain.html, /<meta property="og:title" content="Do You Really Not Know Their Name Yet\?\?"/, "an unknown code gets the ordinary page");
+  await request("/api/profile", { method: "POST", cookie: a.cookie, body: { nickname: 'Ampers&nd <b>' } });
+  const escaped = await page(`shell=speed&code=${created.data.code}`);
+  assert.match(escaped.html, /better than Ampers&amp;nd &lt;b&gt;\?"/, "a nickname cannot break out of the attribute");
+});

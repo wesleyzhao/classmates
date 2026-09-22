@@ -24,6 +24,7 @@ import { makeRng } from "../kits/_lib/rng.js";
 import { keepMissing, pickDirection, studyOrder } from "./learning.js";
 // A missed person returns this many cards later in the same session.
 const RETRY_AFTER = 5;
+const ROOM_INVITE = "Let's play"; // voice-ok: the owner's invite wording.
 import { createPracticeReviews, mergePracticeProgress } from "./practice-reviews.js";
 import { loginLink } from "./login-link.js";
 import { invitePath } from "./invite-path.js";
@@ -1009,7 +1010,8 @@ function Room({ initial, account, run, onExit }) {
           <${ShareLink}
             url=${`${location.origin}/r/${code}`}
             title=${GAME_NAME}
-            text=${`Join my ${r.game.config.mode === "race" ? "race" : "quiz"} in ${GAME_NAME} The room code is ${code}.`}
+            text=${ROOM_INVITE}
+            label=${`Share the ${r.game.config.mode === "race" ? "race" : "quiz"}`}
           />
           <h2 class="players-heading">${r.players.length === 1 ? "Just you so far" : `${r.players.length} in the room`}</h2>
           <ul class="players" aria-live="polite">

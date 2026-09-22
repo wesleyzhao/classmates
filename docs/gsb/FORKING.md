@@ -44,7 +44,7 @@ Set these values through Vercel environment management and in ignored `.env.loca
 
 Choose a stable project URL before configuring email. An `APP_ORIGIN` shared with production makes preview login point to production; use a separate preview project/origin and data resources for independent previews. Never expose production database credentials to fork PR builds.
 
-The build updates link-preview URLs from `APP_ORIGIN` and their description from the cohort configuration. Customize the game title in `public/gsb/index.html`, the share image `public/gsb/og.png`, and any class-specific ranking language in `public/gsb/app.js` and `server/gsb/leaderboard.js`. The included share image is an illustration, not a real portrait. Check the rendered labels before launch. Keep the font licenses when changing the artwork. Search `public/gsb/` for remaining Stanford/GSB copy if your audience differs.
+The build updates link-preview URLs from `APP_ORIGIN` and their description from the cohort configuration. Customize the game title in `public/gsb/index.html`, the share image `public/gsb/og.png`, and any class-specific ranking language in `public/gsb/app.js` and `server/gsb/leaderboard.js`. The included share image shows a pixel figure wearing the GSB dean's public photo as a joke for this class; replace it for another audience. Check the rendered labels before launch. Keep the font licenses when changing the artwork. Search `public/gsb/` for remaining Stanford/GSB copy if your audience differs.
 
 ## 3. Enable real login email
 

@@ -9,7 +9,7 @@ export function siteMetadata(source,env=process.env){
   const escape=value=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const set=(key,value)=>{source=source.replace(new RegExp(`(<meta (?:property|name)="${key}" content=")[^"]*("\\s*/?>)`),(_,before,after)=>before+escape(value)+after);};
   if(env.APP_ORIGIN){
-    const url=new URL(env.APP_ORIGIN),local=!env.VERCEL&&url.protocol==='http:'&&url.hostname==='localhost';
+    const url=new URL(env.APP_ORIGIN),local=!env.VERCEL&&url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname);
     if(url.username||url.password||url.pathname!=='/'||url.search||url.hash||url.protocol!=='https:'&&!local)throw new Error('Configure APP_ORIGIN as your HTTPS deployment origin.');
     set('og:url',url.origin+'/');for(const key of ['og:image','twitter:image'])set(key,url.origin+'/gsb/og.png');
   }

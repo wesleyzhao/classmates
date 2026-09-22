@@ -12,4 +12,8 @@ test('metadata retains the existing title and substitutes only safe owner config
   assert.ok(changed.includes('Class &quot;A&quot; &lt;B&gt;'));
   assert.equal(changed.match(/<title>(.*?)<\/title>/)[1],source.match(/<title>(.*?)<\/title>/)[1]);
   for(const APP_ORIGIN of ['ftp://localhost','https://user:pass@example.test','https://example.test/path','http://example.test'])assert.throws(()=>siteMetadata(source,{APP_ORIGIN}));
+  for (const APP_ORIGIN of ['http://localhost:3138','http://127.0.0.1:3141']) {
+    assert.ok(siteMetadata(source,{APP_ORIGIN}).includes(APP_ORIGIN+'/gsb/og.png'));
+    assert.throws(()=>siteMetadata(source,{APP_ORIGIN,VERCEL:'1'}));
+  }
 });
