@@ -61,6 +61,7 @@ strong { color: var(--arcade-gold); font-weight: 400; }
 .share-link { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; }
 .share-link .share-note { flex-basis: 100%; overflow-wrap: anywhere; }
 .players-heading { margin: 18px 0 6px; }
+.speed-pick { gap: 10px 12px; }
 .players[aria-live] li { animation: arrive 1.6s ease-out both; }
 @keyframes arrive { 0%, 40% { background: var(--warn-soft); box-shadow: inset 4px 0 0 var(--arcade-gold); } 100% { background: transparent; box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .players[aria-live] li { animation: none; } }

@@ -96,7 +96,8 @@ test("email defaults and discoverable nickname edits persist across rooms and re
   const renamed = "alexandra-finlay-jones-2027";
   await page.getByLabel("Nickname", { exact: true }).fill(renamed);
   await page.getByRole("button", { name: "Save nickname" }).click();
-  await page.getByRole("button", { name: `Return to room ${room.room.code}` }).click();
+  await expect(page.getByRole("button", { name: "10 classmates" })).toBeVisible();
+  await page.goto(`/r/${room.room.code}`);
   await expect(page.locator(".players")).toContainText(renamed);
   await page.getByRole("button", { name: `Edit nickname for ${renamed}`, exact: true }).click();
   await page.reload();
@@ -516,7 +517,9 @@ test("two classmates join, chat, answer shared questions, and recover the same s
     }),
     p2 = await other.newPage();
   await login(p2, "Player Two");
-  await page.getByRole("button", { name: "Start a quiz" }).click();
+  // Quizzes are off the home for now; the room screens still answer their links.
+  const quiz = await (await page.request.post("/api/rooms", { headers: { Origin: "http://localhost:3138" }, data: { gameId: "together:mixed" } })).json();
+  await page.goto(`/r/${quiz.room.code}`);
   await expect(page.locator(".room-code")).toBeVisible();
   const code = (await page.locator(".room-code").innerText()).trim();
   await p2.goto(`/r/${code}`);
@@ -578,7 +581,8 @@ test("race mistakes keep the player on the question and correct answers advance"
   browserName,
 }) => {
   await login(page, "Race tester");
-  await page.getByRole("button", { name: "Start a race" }).click();
+  const race = await (await page.request.post("/api/rooms", { headers: { Origin: "http://localhost:3138" }, data: { gameId: "race:mixed" } })).json();
+  await page.goto(`/r/${race.room.code}`);
   const code = (await page.locator(".room-code").innerText()).trim();
   await page.getByRole("button", { name: "Start solo" }).click();
   await expect(page.locator(".answer").first()).toBeEnabled();

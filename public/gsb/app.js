@@ -96,12 +96,15 @@ function App() {
     [loaded, setLoaded] = useState(false),
     [emailReady, setEmailReady] = useState(false),
     [screen, setScreen] = useState(
-      speedCode(location.pathname) ? "speed"
+      speedCode(location.pathname) || location.pathname === "/speed/classic" ? "speed"
         : ["practice", "scores", "profile", "speed"].includes(location.pathname.slice(1))
           ? location.pathname.slice(1)
           : "play",
     ),
     [challenge, setChallenge] = useState(speedCode(location.pathname)),
+    // The four-corner round with its match settings stays reachable at /speed/classic; the game is two doors.
+    [classic, setClassic] = useState(location.pathname === "/speed/classic"),
+    [speedLength, setSpeedLength] = useState(null),
     [room, setRoom] = useState(null),
     [error, setError] = useState("");
   const [direction, setDirection] = useState("mixed"),
@@ -244,10 +247,13 @@ function App() {
   const navigate = (next) => {
     setError("");
     setChallenge(null);
+    setClassic(false);
     setScreen(next);
     setGuestOpen(false);
     history.pushState(null, "", next === "play" ? (site?.landingMode === "quick" ? "/games" : "/") : `/${next}`);
   };
+  /** The speed screen for a round of ten or twenty. */
+  const openSpeed = (length) => { setSpeedLength(length === "short" ? "short" : "quick"); navigate("speed"); };
   // A speed challenge lives at /speed/CODE; the speed screen remounts for the code.
   const openChallenge = (code) => {
     setError("");
@@ -264,11 +270,12 @@ function App() {
         ?.toUpperCase();
       const speed = speedCode(location.pathname);
       setChallenge(speed);
+      setClassic(location.pathname === "/speed/classic");
       if (code && session?.nickname)
         run(async () => enter(await api(`rooms/${code}/join`, {})));
       else
         setScreen(
-          (speed || location.pathname === "/" && site?.landingMode === "quick") ? "speed"
+          (speed || location.pathname === "/speed/classic" || location.pathname === "/" && site?.landingMode === "quick") ? "speed"
             : ["practice", "scores", "profile", "speed"].includes(location.pathname.slice(1))
               ? location.pathname.slice(1)
               : "play",
@@ -372,7 +379,7 @@ function App() {
               logout=${logout}
             />`
           : screen === "speed"
-            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}`} account=${session} guestSaved=${guestSaved} initialLength=${site?.landingMode === "quick" ? "quick" : "short"} challenge=${challenge} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
+            ? Sprint ? html`<${Sprint} key=${`${session.id}:${challenge || ""}:${classic ? "classic" : speedLength || ""}`} account=${session} guestSaved=${guestSaved} classic=${classic} initialLength=${classic ? "short" : speedLength || "quick"} challenge=${challenge} onChallenge=${openChallenge} onExit=${() => navigate("play")} />`
               : html`<p role="status">Opening speed round.</p>`
           : screen === "practice"
             ? html`<${Practice}
@@ -394,13 +401,8 @@ function App() {
                     guestAvailable=${guestAvailable}
                   />`
                 : html`<${Home}
-                    direction=${direction}
-                    setDirection=${setDirection}
-                    run=${run}
-                    enter=${enter}
                     practice=${() => navigate("practice")}
-                    sprint=${() => navigate("speed")}
-                    room=${room}
+                    sprint=${openSpeed}
                     guestSaved=${guestSaved}
                   />`}
     <footer class="footer">
@@ -549,15 +551,9 @@ function Direction({ value, onChange, mixed = true, compact = false, label = "Wh
     </select></label
   >`;
 }
-function Home({ direction, setDirection, run, enter, practice, sprint, room, guestSaved }) {
-  const [code, setCode] = useState(""),
-    [busy, setBusy] = useState(false);
-  const create = (mode) => {
-    setBusy(true);
-    run(async () =>
-      enter(await api("rooms", { gameId: `${mode}:${direction}` })),
-    ).finally(() => setBusy(false));
-  };
+/** The games: practice, and the two-door speed round in ten or twenty. Quizzes, races and room codes are
+ * hidden for now; their screens still answer their links. */
+function Home({ practice, sprint, guestSaved }) {
   return html`<section class="hero">
       <div class="eyebrow">A little practice goes a long way.</div>
       <h1>Names worth knowing.</h1>
@@ -567,74 +563,15 @@ function Home({ direction, setDirection, run, enter, practice, sprint, room, gue
     </section>
     <section class="gsb-card sprint-entry">
       <h2>Speed round</h2>
-      <p class="muted">Match 10 or 20 classmates as quickly and accurately as you can, on your own or against classmates who play the same round.</p>
-      <button class="btn btn-secondary" onClick=${sprint}>Play a speed round</button>
+      <p class="muted">Drop each face on the body with their name, left or right, against the clock. Play on your own, or challenge classmates to the same round on the same count.</p>
+      <div class="row speed-pick">
+        <button class="btn btn-primary" onClick=${() => sprint("quick")}>10 classmates</button>
+        <button class="btn btn-secondary" onClick=${() => sprint("short")}>20 classmates</button>
+      </div>
     </section>
     ${guestSaved && html`<p class="notice small" role="status">
       Speed round saved: ${guestSaved.score.toLocaleString()} points, ${guestSaved.correct} of ${guestSaved.count} correct.
-    </p>`}
-    ${room &&
-    html`<button class="linkbtn" onClick=${() => enter(room)}>
-      Return to room ${room.room.code}
-    </button>`}<${Direction} value=${direction} onChange=${setDirection} label="Questions in quizzes and races" />
-    <div class="panel-grid">
-      <section class="gsb-card">
-        <h2>Play together</h2>
-        <p class="muted">
-          Ten shared questions. Correct answers earn 1,000 points, plus up to
-          500 for speed. Play solo or invite up to seven friends.
-        </p>
-        <button
-          class="btn btn-secondary"
-          disabled=${busy}
-          onClick=${() => create("together")}
-        >
-          Start a quiz
-        </button>
-      </section>
-      <section class="gsb-card">
-        <h2>Race the class</h2>
-        <p class="muted">
-          Twenty questions at your own pace. You must get each one right to move
-          on. First to finish wins.
-        </p>
-        <button
-          class="btn btn-secondary"
-          disabled=${busy}
-          onClick=${() => create("race")}
-        >
-          Start a race
-        </button>
-      </section>
-    </div>
-    <hr class="divider" />
-    <form
-      class="inline-form"
-      onSubmit=${async (e) => {
-        e.preventDefault();
-        setBusy(true);
-        await run(async () =>
-          enter(await api(`rooms/${code.toUpperCase()}/join`, {})),
-        );
-        setBusy(false);
-      }}
-    >
-      <label class="form-field"
-        >Have a room code?<input
-          aria-label="Room code"
-          value=${code}
-          maxlength="4"
-          pattern="[A-Za-z]{4}"
-          required
-          autocapitalize="characters"
-          autocomplete="off"
-          placeholder="ABCD"
-          onInput=${(e) =>
-            setCode(
-              e.target.value.replace(/[^a-z]/gi, "").toUpperCase(),
-            )} /></label
-      ><button class="btn btn-secondary" disabled=${busy}>Join</button>
-    </form>`;
+    </p>`}`;
 }
 function Practice({ run, reviews }) {
   const saves = reviews.pending;
@@ -786,7 +723,7 @@ function Practice({ run, reviews }) {
     <div class="practice-head">
       <div class="row spread practice-controls">
         <h1>Practice</h1>
-        <span class="small muted">Faces and names, both ways</span>
+        <span class="small muted">Spaced repetition learning of names</span>
       </div>
       <div class="statline">
         ${`${seen} of ${deck.cards.length} classmates reviewed. ${known} known. ${due} due now.`}

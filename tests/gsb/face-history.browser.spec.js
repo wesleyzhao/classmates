@@ -16,8 +16,9 @@ test('partial speed history appears in the account and Practice starts with a ne
   await page.getByRole('button',{name:'Continue to Classmates'}).click();
   await page.getByLabel('Nickname',{exact:true}).fill('History learner');
   await page.getByRole('button',{name:'Save nickname'}).click();
+  await expect(page.getByRole('button',{name:'10 classmates'})).toBeVisible();
   const prepared=page.waitForResponse(r=>r.url().endsWith('/api/sprint/prepare')&&r.ok());
-  await page.getByRole('button',{name:'Play a speed round'}).click();
+  await page.goto('/speed/classic');
   const round=await(await prepared).json();
   await page.getByRole('button',{name:'Start the clock'}).click();
   await expect(page.locator('.sprint-play')).toBeVisible();

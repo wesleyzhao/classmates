@@ -68,7 +68,7 @@ test("guest sprint finishes once, retries safely, and saves only after email sig
   await expect(page.getByRole("button", { name: "10 classmates", exact: true })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Back to games", exact: true }).click();
   await expect(page).toHaveURL(/\/games$/);
-  await expect(page.getByRole("button", { name: "Play a speed round" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "10 classmates", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Scores", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Your speed round" })).toBeVisible();
   const best = await (await page.request.get("/api/guest/best")).json();

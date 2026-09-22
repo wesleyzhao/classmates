@@ -16,8 +16,10 @@ async function login(page) {
   await page.getByRole("button", { name: "Continue to Classmates" }).click();
   await page.getByLabel("Nickname", { exact: true }).fill("Speed learner");
   await page.getByRole("button", { name: "Save nickname" }).click();
-  await page.getByRole("button", { name: "Play a speed round" }).click();
-  await expect(page).toHaveURL(/\/speed$/);
+  await expect(page.getByRole("button", { name: "10 classmates" })).toBeVisible();
+  // The four-corner round these cases cover lives at its own path now; the home opens the two-door round.
+  await page.goto("/speed/classic");
+  await expect(page).toHaveURL(/\/speed\/classic$/);
 }
 // The screen prepares a round on its own as soon as it opens, and again shortly after a setting changes.
 // Wait for the first round, then change to the requested direction (by way of another one when it is already
@@ -367,7 +369,7 @@ test("small-phone answer targets stay visible and still with long names in eithe
     await mkdir(`output/gsb-screenshots/${browserName}`, { recursive: true });
     await page.screenshot({ path: `output/gsb-screenshots/${browserName}/sprint-narrow-${direction}.png` });
     await page.getByRole("button", { name: "Leave round" }).click();
-    await page.getByRole("button", { name: "Play a speed round" }).click();
+    await page.goto("/speed/classic");
   }
 });
 
@@ -396,7 +398,7 @@ test("leaving while photos load releases private media and a fresh round still w
     return s.made.every(url => s.revoked.includes(url));
   })).toBe(true);
   await page.unroute("**/gsb/fixture.svg?*");
-  await page.getByRole("button", { name: "Play a speed round" }).click();
+  await page.goto("/speed/classic");
   await prepare(page);
   await expect(page.locator(".sprint-play .portrait")).toBeVisible();
 });
@@ -515,9 +517,10 @@ test("an invite link opened while signed out still ends at the challenge after s
 
 test("a duel starts both players on the host's count, shows the other's progress, and ranks them", async ({ page, browser }) => {
   await login(page);
+  await page.goto("/speed");
   await expect(page.getByRole("button", { name: "Start the clock" })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith("/api/sprint/challenge") && r.status() === 201);
-  await page.getByRole("button", { name: "Start a duel" }).click();
+  await page.getByRole("button", { name: "Challenge classmates" }).click();
   let duel = await (await created).json();
   expect(duel.mode).toBe("duel");
   expect(duel.questions.every(q => q.choices.length === 2)).toBe(true);
@@ -546,16 +549,16 @@ test("a duel starts both players on the host's count, shows the other's progress
     await expect(guest.locator(".sprint-play")).toHaveAttribute("data-question-id", q.id);
     await guest.locator(".sprint-play .answer").nth(Number(q.correctChoice)).click();
   }
-  await expect(guest.locator(".sprint-result")).toContainText("10 of 10");
-  await expect(guest.getByText("Saved.", { exact: true })).toBeVisible();
+  await expect(guest.locator(".sprint-result")).toContainText("10 of 10 correct");
+  await expect(guest.getByText("Saved to your speed records.", { exact: true })).toBeVisible();
   await expect(page.locator(".lead")).toContainText("ahead", { timeout: 8000 });
   await expect(page.locator(".lane.them .head.gone")).toHaveCount(10, { timeout: 8000 });
   for (const [i, q] of duel.questions.entries()) {
     await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id", q.id);
     await page.locator(".sprint-play .answer").nth(i === 0 ? 1 - Number(q.correctChoice) : Number(q.correctChoice)).click();
   }
-  await expect(page.locator(".sprint-result")).toContainText("9 of 10");
-  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await expect(page.locator(".sprint-result")).toContainText("9 of 10 correct");
+  await expect(page.getByText("Saved to your speed records.", { exact: true })).toBeVisible();
   await expect(page.locator(".sprint-result h1")).toContainText("takes it", { timeout: 10000 });
   await expect(page.locator(".versus li").first()).not.toHaveClass(/me/);
   await expect(page.locator(".versus li").nth(1)).toHaveClass(/me/);
@@ -584,11 +587,12 @@ test("default two-door solo accepts arrows and keeps classic four-choice play se
   await page.keyboard.press("ArrowRight");
   await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",round.questions[2].id);
   await page.getByRole("button",{name:"Leave round"}).click();
-  await page.getByRole("button",{name:"Play a speed round"}).click();
-  await expect(page.getByRole("button",{name:"Start the clock"})).toBeVisible();
+  // The classic path opens on four choices of its own accord; its match setting shows that selected.
   const prepared = page.waitForResponse(r=>r.url().endsWith("/api/sprint/prepare") && r.ok() && r.request().postDataJSON()?.choices===4);
-  await page.getByRole("combobox",{name:"Match",exact:true}).selectOption("classic");
+  await page.goto("/speed/classic");
   const classic = await (await prepared).json();
+  await expect(page.getByRole("button",{name:"Start the clock"})).toBeVisible();
+  await expect(page.getByRole("combobox",{name:"Match",exact:true})).toHaveValue("classic");
   expect(classic.choices).toBe(4);
   await page.getByRole("button",{name:"Start the clock"}).click();
   await expect(page.locator(".sprint-play .answer")).toHaveCount(4);

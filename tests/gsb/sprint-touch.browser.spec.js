@@ -18,7 +18,7 @@ test("twenty mobile taps advance once each without zoom or portrait requests", a
   await page.getByRole("button", { name: "Save nickname" }).click();
   // The speed screen prepares its round on its own; the response registered before opening it is the round played.
   const prepared = page.waitForResponse(r => r.url().endsWith("/api/sprint/prepare") && r.ok());
-  await page.getByRole("button", { name: "Play a speed round" }).tap();
+  await page.getByRole("button", { name: "20 classmates" }).tap();
   const round = await (await prepared).json();
   await page.getByRole("button", { name: "Start the clock" }).tap();
   const photos = [];

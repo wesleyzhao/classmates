@@ -169,8 +169,8 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
       <div class="cab attract">
         <div class="eyebrow">Duel ${code}</div>
         <h1 ref=${resultHeading} tabindex="-1" class="title">${heading}</h1>
-        ${result && html`<p class="big">${result.correct} of ${result.count} in <strong>${seconds(result.elapsedMs)}</strong>, ${result.score.toLocaleString()} points.</p>`}
-        <p role="status" class="small">${saved ? "Saved." : saving ? "Saving your result." : unsavable ? "This result could not be saved." : "This result has not been saved yet."}</p>
+        ${result && html`<p class="big">${result.correct} of ${result.count} correct in <strong>${seconds(result.elapsedMs)}</strong>, ${result.score.toLocaleString()} points.</p>`}
+        <p role="status" class="small">${saved ? "Saved to your speed records." : saving ? "Saving your result." : unsavable ? "This result could not be saved. You can start a fresh round." : "This result has not been saved yet."}</p>
         ${error && html`<p class="notice error" role="alert">${error}</p>`}
         ${!(saved || unsavable) && html`<button class="btn btn-primary" disabled=${saving} onClick=${save}>Retry saving result</button>`}
         <ol class="versus" aria-label="Standings">${(contest?.standings || []).map((s, i) => html`<li key=${s.accountId} class=${`${s.accountId === account.id ? "me" : ""} ${s.result && i === 0 ? "win" : ""}`}>

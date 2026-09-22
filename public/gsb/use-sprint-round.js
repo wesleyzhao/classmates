@@ -25,14 +25,14 @@ export const LENGTHS = { quick: 10, short: 20 };
 /** Controller for one signed-in account. Mount with key=account.id (plus the challenge code, when there is one).
  * A challenge plays one shared sequence: the round comes from the join route, settings are fixed, and standings are polled.
  * @param {{id:string}} account
- * @param {{ challenge?: string | null, initialLength?: string }} [options]
+ * @param {{ challenge?: string | null, initialLength?: string, initialChoices?: number }} [options]
  */
-export function useSprintRound(account, { challenge = null, initialLength = "short" } = {}) {
+export function useSprintRound(account, { challenge = null, initialLength = "short", initialChoices = 2 } = {}) {
   const [history] = useState(() => createFaceCheckpoints(account.id));
   const storageKey = challenge ? `${account.id}:${challenge}` : account.id;
   const [restored] = useState(() => readPending(storageKey));
   const pending = useRef(restored);
-  const [choices, setChoices] = useState(pending.current ? pending.current.choices ?? 4 : 2);
+  const [choices, setChoices] = useState(pending.current ? pending.current.choices ?? 4 : initialChoices === 4 ? 4 : 2);
   const [direction, setDirection] = useState(pending.current?.direction || "face"),
     [length, setLength] = useState(pending.current?.length || (Object.hasOwn(LENGTHS, initialLength) ? initialLength : "short")),
     [phase, setPhase] = useState(pending.current ? "result" : "setup"),
@@ -279,7 +279,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
   const createChallenge = async ({ mode = "solo" } = {}) => {
     const c = current.current;
     setError("");
-    try { return (await api("sprint/challenge", mode === "duel" ? { direction: "face", length: "quick", mode } : { direction: c.direction, length: c.length, choices: c.choices })).code; }
+    try { return (await api("sprint/challenge", mode === "duel" ? { direction: "face", length: c.length, mode } : { direction: c.direction, length: c.length, choices: c.choices })).code; }
     catch (e) { if (alive.current) setError(e.message); return null; }
   };
   const start = async () => {

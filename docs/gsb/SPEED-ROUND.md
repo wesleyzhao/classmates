@@ -60,3 +60,7 @@ Solo run documents and their 20-to-10 segments now explicitly record `choices`. 
 ## Shared links and their previews
 
 `vercel.json` rewrites `/speed/CODE` and `/r/CODE` to the function with `?shell=speed|room&code=`, and the dev server does the same for the `gsb` profile. `server/gsb/invite.js` serves the app shell with the preview tags swapped: for a challenge or duel the host's nickname makes the title "Do you know your classmates better than {nickname}?" and the description says how many classmates and whether it starts on one count; for a room, "{host} started a quiz: room MKRT". An unknown, expired or finished code gets the ordinary page. The tags carry a nickname and a code only, never a face, a classmate's name or a score, and the tab title stays the game's name. Cached for a minute. The share sheet texts are the owner's: "First to name all 10 classmates wins..." from a duel lobby, "Same 20 classmates for both of us. Your turn" from a challenge, "I got 9 out of 10 faces in 8.4 seconds. Your turn" from a result ("Share my score"), and "Let's play" from a room (voice-ok: the owner's wording).
+
+## Entry (2026-09-21)
+
+The home's speed card opens the two-door round in ten or twenty; the four-corner round and its match settings live only at `/speed/classic`. A duel takes the length chosen on the speed screen.

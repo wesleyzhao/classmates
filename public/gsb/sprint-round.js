@@ -29,8 +29,9 @@ function Standings({ list, me }) {
 }
 
 /** Speed-round view and accessible focus transitions; rules and persistence live in useSprintRound. */
-export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null }) {
-  const R = useSprintRound(account, { challenge, initialLength });
+/** The speed screens. Two doors by default; `classic` is the four-corner round with its match settings, on its own path. */
+export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null, classic = false }) {
+  const R = useSprintRound(account, { challenge, initialLength, initialChoices: classic ? 4 : 2 });
   const {
     phase, direction, length, choices, round, question, loaded, answers, result, records, error,
     saved, saving, unsavable, elapsed, photoUrls, challenge: contest,
@@ -123,10 +124,10 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     const code = joinCode.trim().toUpperCase();
     if (/^[A-Z]{4}$/.test(code) && onChallenge) onChallenge(code);
   };
-  const settings = html`<label class="form-field">Match<select value=${direction === "face" && choices === 4 ? "classic" : direction} disabled=${!canChange}
+  const settings = html`${classic && html`<label class="form-field">Match<select value=${direction === "face" && choices === 4 ? "classic" : direction} disabled=${!canChange}
       onChange=${e => changeDirection(e.target.value)}>
       <option value="face">Face to name · two choices</option><option value="classic">Face to name · four choices</option><option value="name">Name to face</option><option value="mixed">Both directions</option>
-    </select></label>
+    </select></label>`}
     <div class="form-field"><span>Round</span><div class="seg" role="group" aria-label="Round length">
       ${Object.keys(LENGTHS).map((value) => html`<button key=${value} type="button" class="segbtn" aria-pressed=${String(length === value)} disabled=${!canChange} onClick=${() => changeLength(value)}>${LENGTHS[value]} classmates</button>`)}
     </div></div>`;
@@ -233,15 +234,20 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
       <div class="eyebrow">Your quickest introductions</div>
       <h1 class="title">Speed round</h1>
       ${guestSaved && html`<p class="small" role="status">Speed round saved: ${guestSaved.correct} of ${guestSaved.count} correct, ${guestSaved.score.toLocaleString()} points.</p>`}
-      <p>Flick each classmate onto their name, as fast as you can. Every correct answer earns 1,000 points, with up to 999 extra for a fast round.</p>
+      ${classic
+        ? html`<p>Flick each classmate onto their name, as fast as you can. Every correct answer earns 1,000 points, with up to 999 extra for a fast round.</p>`
+        : html`<p>Drop each face on the body with their name, left or right, as fast as you can. Every one right earns 1,000 points, with up to 999 extra for a fast round.</p>`}
       <p class="small">A perfect run sets your fastest time. The clock keeps running if you switch tabs.</p>
       ${settings}
       ${error && html`<p class="notice error" role="alert">${error}</p>`}
       ${controls}
-      <div class="row"><button type="button" class="btn btn-secondary" disabled=${creating} onClick=${startChallenge}>${creating ? "Making a code" : "Challenge classmates"}</button>
-        <span class="small">Same round for everyone who opens your code, whenever they like.</span></div>
-      <div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Start a duel"}</button>
-        <span class="small">Ten classmates, two doors, everyone on the same 3-2-1.</span></div>
+      ${classic
+        ? html`<div class="row"><button type="button" class="btn btn-secondary" disabled=${creating} onClick=${startChallenge}>${creating ? "Making a code" : "Challenge classmates"}</button>
+            <span class="small">Same round for everyone who opens your code, whenever they like.</span></div>
+          <div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Start a duel"}</button>
+            <span class="small">Two doors, everyone on the same 3-2-1.</span></div>`
+        : html`<div class="row"><button type="button" class="btn btn-secondary" disabled=${dueling} onClick=${startDuel}>${dueling ? "Making a code" : "Challenge classmates"}</button>
+            <span class="small">The same ${count} classmates for everyone, on the same 3-2-1.</span></div>`}
       <form class="code-form" onSubmit=${joinChallenge}>
         <span class="lbl">Have a challenge code?</span>
         <div class="row"><input aria-label="Challenge code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" placeholder="ABCD" value=${joinCode} onInput=${(e) => setJoinCode(e.target.value)} />
