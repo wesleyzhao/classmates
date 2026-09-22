@@ -6,6 +6,13 @@ import { sendDescopeLink, verifyDescopeLink } from "./descope.js";
 import { emailDomains } from './site-config.js';
 import { invitePath } from '../../public/gsb/invite-path.js';
 const token = () => randomBytes(32).toString("base64url");
+/** Keep provider details in the session ledger; callers depend only on the verified access class.
+ * @param {any} account
+ * @returns {any}
+ */
+function accountView(account) {
+  return account?.access === "descope" ? { ...account, access: "email" } : account;
+}
 /** Hash bearer secrets before persistence. */
 export const hash = (value) => createHash("sha256").update(value).digest("hex");
 /** Accept one unambiguous address at an explicitly allowed domain. Stanford is the default. */
@@ -173,7 +180,7 @@ export async function consumeLink(db, secret, proof = undefined) {
       "link",
       "This link has expired or was already used. Request a new one.",
     );
-  return { account: rows[0], session };
+  return { account: accountView(rows[0]), session };
 }
 /** Cookie name uses the host-only secure prefix in production. */
 export const cookieName = () => (process.env.VERCEL ? "__Host-gsb" : "gsb");
@@ -203,7 +210,7 @@ export async function authenticate(db, req) {
     try { stanfordEmail(account.email); }
     catch (error) { if (error.status === 400) return null; throw error; }
   }
-  return account;
+  return accountView(account);
 }
 /** Derive a server-only seat credential from the verified account and a deployment secret. */
 export function roomIdentity(account) {

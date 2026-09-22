@@ -118,6 +118,9 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.deepEqual(await db.query("select (select count(*) from gsb_matches) as matches,(select count(*) from gsb_ratings) as ratings"), before);
   assert.equal((await request("/api/guest/claim", { method: "POST", cookie: guestCookie })).status, 401);
   const sessionA = await login();
+  // Model a provider-verified session in the isolated ledger. Public access must stay provider-independent.
+  await db.query("update gsb_sessions set purpose='descope' where hash=$1", [hash(sessionA.split("=")[1])]);
+  assert.equal((await request("/api/session", { cookie: sessionA })).data.account.access, "email");
   const claimed = await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionA}` });
   assert.deepEqual(claimed.data.result, results[0].data);
   assert.deepEqual((await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionA}` })).data, claimed.data);

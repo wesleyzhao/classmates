@@ -10,6 +10,8 @@ After the first email confirmation, nickname setup starts with the email usernam
 
 Email links are confirmed with a button before the one-use credential is consumed. This protects against mail scanners following links automatically. The heading works for both new and returning users.
 
+The account API reports `access: "email"` for every verified email provider, including Descope, both immediately after confirmation and when restoring a session. The database retains the provider-specific session purpose. Guest-score claims and other features consume the verified access class, not a provider name; tester and owner-preview access remain separate.
+
 ## Rehearse without changing a real account
 
 From the canonical checkout with `.env.local` providing the database connection:
