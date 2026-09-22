@@ -7,6 +7,7 @@ import { saveNickname } from "./profile.js";
 import { GUEST_ROUND_SIZE, guestConfig, getGuestRun, startGuestRun, finishGuestRun, claimGuestRun, guestBest, guestMediaPath } from "./guest.js";
 import { faceHistories, faceSummary } from "./face-history.js";
 import { publicSiteConfig } from './site-config.js';
+import { CAMPUS_LIMITS, loginEmailDailyLimit } from './launch-limits.js';
 import { createChallenge, joinChallenge, challengeView, rematchChallenge, readyChallenge, beginChallenge, progressChallenge, prepareSprint, startSprint, finishSprint, sprintRecords, checkpointSprint } from "./sprint.js";
 import {
   authenticate,
@@ -45,9 +46,9 @@ export function createGsbHandler(deps = {}) {
       const db = deps.db ?? database();
       const rooms = deps.rooms ?? classRooms(db.store);
       const ip = hash(clientIp(req)).slice(0, 24);
-      const limit = async (key, max, ms = 60000) => {
+      const limit = async (key, max, ms = 60000, message = "Please wait a little before trying again.") => {
         if (!(await db.store.bumpLimit(`gsb:${key}`, ms, max)).allowed)
-          bad(429, "rate_limited", "Please wait a little before trying again.");
+          bad(429, "rate_limited", message);
       };
       if (method === "GET" && p[0] === "health")
         return sendJson(res, 200, {
@@ -70,13 +71,14 @@ export function createGsbHandler(deps = {}) {
         if (p[1] === "start" && p.length === 2 && method === "POST") {
           const existing = await getGuestRun(db, req);
           if (existing) return sendJson(res, 200, existing);
-          await limit(`guest-start:${ip}`, 5, 3600000);
-          await limit("guest-start-day", 200, 86400000);
+          await limit(`guest-start:${ip}`, CAMPUS_LIMITS.guestStartIp, 3600000);
+          await limit("guest-start-day", CAMPUS_LIMITS.guestStartDay, 86400000,
+            "Guest play is at its daily limit. Please sign in to keep playing.");
           const deck = await (deps.latestDeck ?? latestDeck)();
           return sendJson(res, 200, await startGuestRun(db, req, res, deck, deps.guestOptions));
         }
         if (p[1] === "finish" && p.length === 2 && method === "POST") {
-          await limit(`guest-finish:${ip}`, 20, 3600000);
+          await limit(`guest-finish:${ip}`, CAMPUS_LIMITS.guestFinishIp, 3600000);
           const body = await readJsonBody(req, { maxBytes: 8192 });
           return sendJson(res, 200, await finishGuestRun(db, req, body));
         }
@@ -90,9 +92,14 @@ export function createGsbHandler(deps = {}) {
       if (p[0] === "auth" && p[1] === "request" && method === "POST") {
         const body = await readJsonBody(req, { maxBytes: 4096 }),
           email = stanfordEmail(body.email);
-        await limit(`email-ip:${ip}`, 10, 900000);
-        await limit(`email:${hash(email)}`, 3, 900000);
-        await limit("email-day", 90, 86400000);
+        const dailyMax = loginEmailDailyLimit();
+        // A rejected repeat recipient must not spend the shared campus network's allowance.
+        await limit(`email:${hash(email)}`, 3, 900000,
+          "Too many links requested for this email. Please wait 15 minutes before trying again.");
+        await limit(`email-ip:${ip}`, CAMPUS_LIMITS.emailIp, 900000,
+          "Many sign-in links were requested from this network. Please try again in 15 minutes.");
+        await limit("email-day", dailyMax, 86400000,
+          "Sign-in email is at its daily limit. Please try again later.");
         await requestLink(db, email, deps.send ?? deliverLink, body.returnTo);
         return sendJson(res, 200, { sent: true });
       }
@@ -105,7 +112,7 @@ export function createGsbHandler(deps = {}) {
         return sendJson(res, 200, { account: result.account });
       }
       if (p[0] === "auth" && p[1] === "verify" && method === "POST") {
-        await limit(`verify:${ip}`, 20, 900000);
+        await limit(`verify:${ip}`, CAMPUS_LIMITS.verifyIp, 900000);
         const body = await readJsonBody(req, { maxBytes: 4096 }),
           result = await consumeLink(db, body.token, body.proof);
         sessionCookie(res, result.session);
@@ -212,21 +219,21 @@ export function createGsbHandler(deps = {}) {
         if (!account.nickname) bad(400, "nickname", "Choose a nickname before joining a challenge.");
         const deck = await (deps.latestDeck ?? latestDeck)();
         if (p.length === 2 && method === "POST") {
-          await limit(`challenge-create:${account.id}`, 10, 3600000);
+          await limit(`challenge-create:${account.id}`, 120, 3600000);
           const b = await readJsonBody(req, { maxBytes: 4096 });
           return sendJson(res, 201, await createChallenge(db, account, deck, b.direction, b.length, b.mode ?? "solo", b.choices));
         }
         if (p.length === 4 && p[3] === "join" && method === "POST") {
-          await limit(`challenge-join:${account.id}`, 60, 3600000);
+          await limit(`challenge-join:${account.id}`, 240, 3600000);
           return sendJson(res, 200, await joinChallenge(db, account, deck, p[2]));
         }
         // Duels: ready up, the host starts the count, progress is live, and a rematch follows the old code.
         if (p.length === 4 && p[3] === "ready" && method === "POST") {
-          await limit(`challenge-ready:${account.id}`, 60, 3600000);
+          await limit(`challenge-ready:${account.id}`, 480, 3600000);
           return sendJson(res, 200, await readyChallenge(db, account, p[2], (await readJsonBody(req,{maxBytes:1024})).version));
         }
         if (p.length === 4 && p[3] === "begin" && method === "POST") {
-          await limit(`challenge-begin:${account.id}`, 30, 3600000);
+          await limit(`challenge-begin:${account.id}`, 240, 3600000);
           return sendJson(res, 200, await beginChallenge(db, account, p[2], (await readJsonBody(req,{maxBytes:1024})).version));
         }
         if (p.length === 4 && p[3] === "progress" && method === "POST") {
@@ -235,7 +242,7 @@ export function createGsbHandler(deps = {}) {
           return sendJson(res, 200, await progressChallenge(db, account, p[2], b.index, b.right));
         }
         if (p.length === 4 && p[3] === "rematch" && method === "POST") {
-          await limit(`challenge-create:${account.id}`, 10, 3600000);
+          await limit(`challenge-create:${account.id}`, 120, 3600000);
           return sendJson(res, 201, await rematchChallenge(db, account, deck, p[2]));
         }
         if (p.length === 3 && method === "GET") return sendJson(res, 200, await challengeView(db, p[2]));

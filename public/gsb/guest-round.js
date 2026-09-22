@@ -117,7 +117,8 @@ export function GuestRound({ onSignIn, signInForm }) {
     }
   };
   useFlick(piece, arena, answer, question?.id ?? "", twoDoors ? { map: doorSide } : {});
-  useEffect(() => {
+  // Bind during the DOM commit: a rapid keypress must see the face already on screen.
+  useLayoutEffect(() => {
     if (!question) return;
     const key = (e) => {
       if (e.repeat && ["Enter", " "].includes(e.key) && e.target?.closest?.("[data-sprint-answer]")) { e.preventDefault(); return; }

@@ -25,7 +25,27 @@ Resend remains an alternative in `deliverLink(email,url)`: remove `DESCOPE_PROJE
 
 ### Email wording and daily limits
 
-Checked September 21, 2026: [Descope's Free plan](https://www.descope.com/pricing) includes up to **1,000 emails per day** and 7,500 monthly active users. The application's existing shared limiter is **90 sign-in requests per 24-hour bucket**, plus three per recipient and ten per IP per fifteen minutes. Failed requests can consume limiter capacity; this is not an inbox-delivery counter. Provider limits and throttles still apply.
+Checked September 21, 2026: [Descope's Free plan](https://www.descope.com/pricing) includes up to **1,000 emails per day** and 7,500 monthly active users. The application allows **900 sign-in requests per 24-hour window**, shared across all users and IPs. This replaces the earlier 90-request limit. Set `CLASSMATES_LOGIN_EMAILS_PER_DAY` to a positive integer to use a different sender allowance; omitted configuration defaults to 900 and invalid values fail closed. Keep headroom below the provider allowance. Failed sends consume capacity conservatively because a timeout does not prove the provider failed to send. Provider limits, reset times and throttles still apply independently.
+
+### Campus launch limits
+
+`server/gsb/launch-limits.js` holds the network ceilings. An IP is a shared network, not a player. These defaults admit a 450-person class sharing campus Wi-Fi, including one resend each within the default daily email budget:
+
+| Operation | Limit | Scope |
+| --- | --- | --- |
+| Login email | 900 per 24 hours | Whole app, configurable as above |
+| Login email | 3 per 15 minutes | Normalized recipient |
+| Login email | 1,800 per 15 minutes | Shared IP |
+| Confirm login link | 1,800 per 15 minutes | Shared IP |
+| Start guest trial | 1,000 per hour | Shared IP |
+| Start guest trial | 2,000 per 24 hours | Whole app |
+| Finish guest trial | 3,000 per hour | Shared IP, including retries |
+
+Counters use the existing atomic database upsert. Each fixed window starts with its first counted request, and restarts after its duration; these limits do not reset at Los Angeles midnight. Increasing a ceiling retains existing counts and does not delete sessions or history. Recipient checks run before network and daily checks, so rejected repeat-recipient requests do not spend everyone else's allowance. Exhausted email capacity does not prevent an already-issued link from being verified or a signed-in person from playing. Existing guest cookies resume their original trial even when new-trial capacity is exhausted. Full roster access and one trial per browser stay unchanged.
+
+Quick challenges and duel rematches share a per-account creation budget of 120 per hour, increased from ten. Join/begin allow 240 per hour and ready allows 480 per hour for toggles/retries. Ordinary gameplay, Practice and room actions already use account/player limits. The private tester door retains its separate ten-per-IP-per-fifteen-minute protection and existing accounts. Never copy a low blanket API/IP rule from generic Parlor deployment advice into a campus deployment: portrait loads and multiplayer polling also share that network.
+
+Launch checks include synthetic 450-person shared-IP routing tests, atomic Postgres boundary/concurrency tests, and Chromium/WebKit guest and email-link journeys. These verify correctness and rate-limit capacity, not 450 simultaneous real browsers or guaranteed free-tier throughput. No bulk real emails are sent by the tests.
 
 The managed **Descope / System** sender locks its email template. Its console explicitly disables New Template until a custom connector is selected; [provider documentation](https://docs.descope.com/auth-methods/magic-link/settings) confirms this restriction. Production still uses that template. Do not claim that editing app files changes managed email copy.
 
@@ -67,6 +87,8 @@ NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_guest_api node --env-file=.env.local scri
 NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_guest_api node --env-file=.env.local --test tests/gsb/guest.integration.js
 NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_sprint_api node --env-file=.env.local scripts/gsb/test-setup.js
 NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_sprint_api node --env-file=.env.local --test tests/gsb/sprint.integration.js
+NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_launch_api node --env-file=.env.local scripts/gsb/test-setup.js
+NODE_ENV=test GSB_TEST_SCHEMA=gsb_test_launch_api node --env-file=.env.local --test tests/gsb/launch-limits.integration.js
 ```
 
 The explicit test setup creates its own Postgres schema with fictional students and silhouettes. Production data stays in `public`; test rows do not affect class scores. The schema override and local email outbox require NODE_ENV=test and are ignored on Vercel. Browser tests write one-time links to `/tmp/gsb-test-mail.jsonl`; treat that local file as private test credentials and delete it when finished.

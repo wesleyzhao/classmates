@@ -92,3 +92,16 @@ Validation: 512 unit tests, 11 isolated HTTP/database scenarios, and 58 distinct
 
 
 Production acceptance: source `276acb3` deployed READY as `dpl_8UnHD7FeMum8qJo2hcgH6mQU7pZ9` on the unchanged `https://gsb-classmates.vercel.app` URL. An isolated WebKit visitor saw 3-2-1, ten real approved portraits, exactly two drop targets, ten successful taps and the email form after completion; no replay button or page errors. The full deck returned 401 without a session. Deployment smoke passed every private-route and cache-policy check. No live email was sent for this release: the Descope System template is still unchanged as documented above.
+
+## Campus capacity follow-up
+
+- [x] Raise the shared login request budget from 90 to 900 per 24-hour window, with a validated operator configuration for forks and other senders.
+- [x] Retain the three-per-recipient resend limit and check it before spending shared network capacity.
+- [x] Admit the whole class through one shared IP for guest starts, email requests, verification and result saving. Keep the small approved sample and one guest trial per browser.
+- [x] Raise the ten-per-hour quick-challenge/rematch ceiling to 120 per account and align join/ready/begin limits.
+- [x] Verify 450 synthetic classmates with one resend each; block the 901st send. Verify real database concurrency, expiry, guest resume/save and the eleventh quick duel in an isolated schema.
+- [x] Inspect the hosting firewall: no custom active/draft rules, no attack mode and no recorded mitigations in the inspected period.
+- [x] Fix a rapid guest keyboard transition: bind the answer handler during DOM commit so the next visible question accepts input immediately. Cover the exact DOM-commit moment in the browser regression.
+- [ ] Complete browser regressions and same-URL production verification.
+
+This change adds no dependency, migration, paid service, roster import or account cleanup. Existing database counters retain their counts; limits take effect with the new deployment. See [OPERATIONS.md](OPERATIONS.md) for exact values and the distinction between rate-limit tests and a real simultaneous-user load test.

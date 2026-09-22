@@ -10,6 +10,8 @@ Each browser gets one random HttpOnly, SameSite=Lax capability cookie, Secure on
 
 This is one trial per browser, not a global identity check. Clearing cookies or using another browser can obtain another trial. Avoid fingerprinting or an IP-only ban: people on the same campus share addresses. The bounded sample and rate limits prevent this convenience limit from becoming full-roster access. A browser may also evict storage before its declared expiration.
 
+For a class-wide launch, new trials allow 1,000 per shared IP per hour and 2,000 globally per 24-hour window. Finishing allows 3,000 per shared IP per hour, including result retries. Resuming the same trial bypasses new-trial counters. These are abuse ceilings, not the one-trial-per-browser rule; see [OPERATIONS.md](OPERATIONS.md) for the full onboarding policy and tests.
+
 The result screen contains the email form directly. Entering an eligible email sends a magic link to that address; verifying the link is required to continue or save. The same-browser cookie claims the result exactly once after verified sign-in. Opening the link in another browser cannot claim the original browser's trial. The nickname step remains, followed by the ten-face Speed screen and a visible saved-score confirmation. Claimed scores remain available under Scores. Existing tester grants remain separate and cannot claim a guest score as verified email accounts.
 
 Guest scores are personal, unranked results. They never enter competitive Speed records or multiplayer ratings. The existing claim trigger records the faces seen/right/wrong in cross-mode history. Practice-only spaced repetition stays separate.

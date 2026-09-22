@@ -118,21 +118,23 @@ test("countdown overlaps preload; rapid taps have no network pauses and duplicat
     const q = round.questions[i];
     await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", q.id);
     await expect.poll(() => page.locator(".guest-round .piece img").evaluate(img => /** @type {HTMLImageElement} */(img).naturalWidth)).toBeGreaterThan(0);
-    latencies.push(await page.evaluate(({ choice, next }) => new Promise(resolve => {
+    latencies.push(await page.evaluate(({ choice, next, finalChoice }) => new Promise(resolve => {
       const start = performance.now(), region = document.querySelector(".guest-round");
       const observer = new MutationObserver(() => {
-        if (region.getAttribute("data-question-id") === next) { observer.disconnect(); resolve(performance.now() - start); }
+        if (region.getAttribute("data-question-id") === next) {
+          observer.disconnect(); resolve(performance.now() - start);
+          // A key can arrive after DOM commit but before passive effects rebind handlers.
+          if (finalChoice !== null) window.dispatchEvent(new KeyboardEvent('keydown', {key: String(Number(finalChoice) + 1), bubbles: true}));
+        }
       });
       observer.observe(region, { attributes: true });
       const button = /** @type {HTMLButtonElement} */(document.querySelectorAll(".guest-round .answer")[Number(choice)]);
       button.click(); button.click();
-    }), { choice: q.correctChoice, next: String(i + 1) }));
+    }), { choice: q.correctChoice, next: String(i + 1), finalChoice: i === 8 ? round.questions[9].correctChoice : null }));
   }
-  expect(requests).toEqual([]);
+  expect(requests.filter(url => !url.endsWith("/api/guest/finish"))).toEqual([]);
   expect(Math.max(...latencies)).toBeLessThan(100);
   console.log(`${browserName} guest tap-to-next ms: ${latencies.join(", ")}`);
-  await page.keyboard.down(String(Number(round.questions[9].correctChoice) + 1));
-  await page.keyboard.up(String(Number(round.questions[9].correctChoice) + 1));
   await expect(page.locator(".guest-result")).toContainText("10 of 10 correct");
   expect(requests.filter(url => url.endsWith("/api/guest/finish"))).toHaveLength(1);
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-result-phone.png`, fullPage: true });
