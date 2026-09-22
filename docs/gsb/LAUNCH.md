@@ -85,7 +85,10 @@ The final provider review caught a pre-existing guest-claim bug: Descope session
 - [x] Put the requested email copy and Log In Now button in the modular custom-sender renderer and local preview. Verify Descope's live System template is locked and clearly document that live copy is not changed.
 - [x] Verify current published Descope Free allowance: 1,000 emails/day. Keep the app's stricter 90-request daily limiter unchanged.
 - [x] Complete unit/type/build/privacy checks, isolated database tests, Chromium/WebKit guest/speed/duel/onboarding regressions, and phone/desktop visual review.
-- [ ] Push tested source to main, verify same-URL production deployment, and preserve tester accounts and existing data.
+- [x] Push tested source to main, verify same-URL production deployment, and preserve tester accounts and existing data.
 
 
 Validation: 512 unit tests, 11 isolated HTTP/database scenarios, and 58 distinct Chromium/WebKit scenarios (16 Guest, 36 Speed/touch/challenge/duel, 6 onboarding/invitation) pass. Focused repeats cover the final shared name-tag styles and left/right drops. An older request-shape assertion was updated to include the explicit `choices` field; both browser reruns passed. Visual review caught clipped long names at 320px; fixed-height name tags with smaller long-name text now keep the full name visible, covered by text bounds as well as button bounds. Guest answer-to-next DOM changes measured at most 6ms locally, and solo at most 7ms; these are local test measurements, not physical iPhone guarantees. The original four accounts, three tester sessions and two settings remain present and unchanged.
+
+
+Production acceptance: source `276acb3` deployed READY as `dpl_8UnHD7FeMum8qJo2hcgH6mQU7pZ9` on the unchanged `https://gsb-classmates.vercel.app` URL. An isolated WebKit visitor saw 3-2-1, ten real approved portraits, exactly two drop targets, ten successful taps and the email form after completion; no replay button or page errors. The full deck returned 401 without a session. Deployment smoke passed every private-route and cache-policy check. No live email was sent for this release: the Descope System template is still unchanged as documented above.
