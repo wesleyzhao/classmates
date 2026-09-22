@@ -4,6 +4,7 @@ import { api } from "./components.js";
 import { prepareRoundMedia } from "./round-media.js";
 import { pieceMarkup, zoneMarkup } from "./sprint-pieces.js";
 import { useFlick, dealPiece, flashZone, floater, firstName, targetOf } from "./sprint-arcade.js";
+import { doorMarkup, doorPieceMarkup, doorSide } from "./two-door-pieces.js";
 import { sfx } from "./sound.js";
 import { GuestCountdown } from "./guest-countdown.js";
 
@@ -16,7 +17,7 @@ function restore(round) {
     const state = JSON.parse(localStorage.getItem(storageKey(round.id)) || sessionStorage.getItem(storageKey(round.id)));
     if (Array.isArray(state?.answers) && state.answers.length <= round.count &&
       state.answers.every((a, i) => a.questionId === round.questions[i].id &&
-        (a.choice === null || /^[0-3]$/.test(a.choice)) && Number.isInteger(a.elapsedMs) &&
+        (a.choice === null || round.questions[i].choices.some(c => c.id === a.choice)) && Number.isInteger(a.elapsedMs) &&
         a.elapsedMs >= 0 && a.elapsedMs <= round.questionMs))
       return { answers: state.answers, startedAt: Number(state.startedAt) || Date.now() };
   } catch {}
@@ -104,22 +105,26 @@ export function GuestRound({ onSignIn, signInForm }) {
     return true;
   };
   const question = round?.questions[attempt?.answers.length];
+  const twoDoors = question?.choices.length === 2;
   const answer = (index) => {
-    if (!question || !choose(question.id, question.choices[index].id)) return;
+    if (!question?.choices[index] || !choose(question.id, question.choices[index].id)) return;
     const zone = arena.current?.querySelector(`[data-k="${index}"]`);
     const right = question.choices[index].id === question.correctChoice;
     if (right) sfx.right(); else sfx.wrong();
     if (zone && fx.current && piece.current) {
-      dealPiece(fx.current, piece.current, zone, right); flashZone(zone, right);
+      dealPiece(fx.current, twoDoors ? piece.current.querySelector(".slot") : piece.current, twoDoors ? zone.querySelector(".slot") : zone, right); flashZone(zone, right);
       floater(fx.current, zone, `${right ? "✓" : "✗"} ${firstName(targetOf(question).name)}`, right);
     }
   };
-  useFlick(piece, arena, answer, question?.id ?? "");
+  useFlick(piece, arena, answer, question?.id ?? "", twoDoors ? { map: doorSide } : {});
   useEffect(() => {
     if (!question) return;
     const key = (e) => {
+      if (e.repeat && ["Enter", " "].includes(e.key) && e.target?.closest?.("[data-sprint-answer]")) { e.preventDefault(); return; }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.target instanceof Element && e.target.closest("input,textarea,select")) return;
-      if (/^[1-4]$/.test(e.key)) { e.preventDefault(); if (!e.repeat) answer(Number(e.key) - 1); }
+      const index = twoDoors && e.key === "ArrowLeft" ? 0 : twoDoors && e.key === "ArrowRight" ? 1 : /^[1-4]$/.test(e.key) ? Number(e.key) - 1 : -1;
+      if (question.choices[index]) { e.preventDefault(); if (!e.repeat) answer(index); }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -158,7 +163,7 @@ export function GuestRound({ onSignIn, signInForm }) {
   </div></section>`;
   const remaining = Math.max(0, round.questionMs - Math.max(0, now - attempt.startedAt));
   const right = attempt.answers.filter((a, i) => a.choice === round.questions[i].correctChoice).length;
-  return html`<section ref=${region} tabindex="-1" aria-label="Guest speed round" class="sprint-stage sprint-play guest-round" data-question-id=${question.id}><div class="cab">
+  return html`<section ref=${region} tabindex="-1" aria-label="Guest speed round" class=${`sprint-stage sprint-play guest-round ${twoDoors ? "sprint-duel" : ""}`} data-question-id=${question.id}><div class="cab">
     <header class="sprint-hud">
       <div class="col"><span class="lbl">Right</span><span class="val">${right}</span></div>
       <div class="col"><span class="lbl">Face</span><span class="val">${attempt.answers.length + 1} / ${round.count}</span></div>
@@ -167,9 +172,9 @@ export function GuestRound({ onSignIn, signInForm }) {
     </header>
     <h1 class="sr-only">Match the face to a name</h1>
     <div class="arena" ref=${arena} data-dir="face"><div class="fx" ref=${fx} aria-hidden="true"></div>
-      <div class="choices" role="group" aria-label="Answer choices">${question.choices.map((choice, i) => html`<button key=${choice.id} class="answer zone" data-k=${i} data-state="idle" aria-label=${choice.label} onClick=${() => answer(i)}>${zoneMarkup(choice, i, media.current.urls)}</button>`)}</div>
-      <div key=${question.id} class="piece" ref=${piece}>${pieceMarkup(question, media.current.urls, false)}</div>
+      <div class="choices" role="group" aria-label="Answer choices">${question.choices.map((choice, i) => html`<button key=${choice.id} class=${`answer zone ${twoDoors ? "door" : ""}`} data-sprint-answer="true" data-k=${i} data-state="idle" aria-label=${choice.label} onClick=${() => answer(i)}>${twoDoors ? doorMarkup(choice, i) : zoneMarkup(choice, i, media.current.urls)}</button>`)}</div>
+      <div key=${question.id} class="piece" ref=${piece}>${twoDoors ? doorPieceMarkup(question, media.current.urls) : pieceMarkup(question, media.current.urls, false)}</div>
     </div>
-    <div class="strip"><span class="hint">Tap a name or flick toward it</span></div>
+    <div class="strip"><span class="hint">Drag the face onto a name, or tap it</span></div>
   </div></section>`;
 }

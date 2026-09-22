@@ -323,3 +323,40 @@ test("a duel has two doors, starts on the host's count for everyone who is in, s
   const follow = await request(`/api/sprint/challenge/${duel.code}/rematch`, { method: "POST", cookie: b.cookie });
   assert.equal(follow.data.code, rematch.data.code, "the other player's rematch lands in the same new duel");
 });
+
+
+test("two-choice solo records stay separate from four-choice records and reuse both ten-face halves", async () => {
+  const a = await login();
+  for (const choices of [2, 4]) {
+    const prepared = await request("/api/sprint/prepare", { method:"POST", cookie:a.cookie, body:{direction:"face", length:"short", choices} });
+    assert.equal(prepared.status, 200);
+    const run = prepared.data;
+    assert.equal(run.choices, choices);
+    assert.ok(run.questions.every(q => q.choices.length === choices));
+    assert.equal(run.segments.length, 2);
+    const segment = run.segments[0];
+    const order = run.questions.slice(0,10);
+    assert.equal((await request("/api/sprint/start", {method:"POST",cookie:a.cookie,body:{id:segment.id}})).status,200);
+    if (choices === 2) {
+      const invalid = await request("/api/sprint/finish", {method:"POST",cookie:a.cookie,body:{id:segment.id,elapsedMs:1,answers:order.map(q=>({questionId:q.id,choice:"2"}))}});
+      assert.equal(invalid.status,400);
+    }
+    const finished = await request("/api/sprint/finish", {method:"POST",cookie:a.cookie,body:{id:segment.id,elapsedMs:1,answers:order.map((q,i)=>({questionId:q.id,choice:choices === 4 && i === 0 ? String((Number(q.correctChoice)+1)%4) : q.correctChoice}))}});
+    assert.equal(finished.status,200);
+    const records = await request(`/api/sprint/records?direction=face&length=quick&choices=${choices}`, {cookie:a.cookie});
+    assert.equal(records.data.bestScore.correct, choices === 2 ? 10 : 9);
+    if (choices === 2) assert.equal((await request("/api/sprint/records?direction=face&length=quick&choices=4",{cookie:a.cookie})).data.bestScore,null);
+  }
+  await request("/api/profile", {method:"POST",cookie:a.cookie,body:{nickname:"Two-door player"}});
+  const shared = await request("/api/sprint/challenge", {method:"POST",cookie:a.cookie,body:{direction:"face",length:"quick",choices:2}});
+  assert.equal(shared.status,201);
+  assert.equal(shared.data.choices,2);
+  assert.ok(shared.data.questions.every(q=>q.choices.length===2));
+  const rematch = await request(`/api/sprint/challenge/${shared.data.code}/rematch`, {method:"POST",cookie:a.cookie});
+  assert.equal(rematch.status,201);
+  assert.equal(rematch.data.choices,2);
+  const ownTwo = await request("/api/sprint/records?direction=face&length=quick&choices=2",{cookie:a.cookie});
+  assert.equal(ownTwo.data.bestScore.correct,10);
+  assert.equal(ownTwo.data.fastestPerfect.correct,10);
+  for (const choices of [3, "2", null]) assert.equal((await request("/api/sprint/prepare",{method:"POST",cookie:a.cookie,body:{direction:"face",length:"quick",choices}})).status,400);
+});

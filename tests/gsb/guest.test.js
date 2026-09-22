@@ -105,6 +105,9 @@ test("one cookie gets one ten-face run, even after completion and refresh", asyn
     assert.equal(started.status, "ready");
     assert.equal(started.questionMs, 8000);
     assert.equal(started.questions.length, 10);
+    assert.ok(started.questions.every(q => q.choices.length === 2));
+    const invalid = started.questions.map(q => ({questionId:q.id,choice:"2",elapsedMs:0}));
+    await assert.rejects(finishGuestRun(db, request(res), {answers:invalid}), /not valid/);
     assert.ok(res.headers["Set-Cookie"].includes("HttpOnly"));
     assert.ok(res.headers["Set-Cookie"].includes("SameSite=Lax"));
     assert.ok(res.headers["Set-Cookie"].includes("Max-Age=31536000"));
@@ -125,7 +128,7 @@ test("one cookie gets one ten-face run, even after completion and refresh", asyn
 });
 
 test("logs have exact order, choices, and bounded integer elapsed times", () => {
-  const doc = { questions: Array.from({ length: 10 }, (_, index) => ({ id: String(index), correctChoice: "2" })) };
+  const doc = { questions: Array.from({ length: 10 }, (_, index) => ({ id: String(index), correctChoice: "2", choices: [0,1,2,3].map(n => ({id:String(n)})) })) };
   const logs = doc.questions.map((question) => ({ questionId: question.id, choice: "2", elapsedMs: 7999 }));
   const result = scoreGuestRun(doc, logs);
   assert.equal(result.score, 10160);

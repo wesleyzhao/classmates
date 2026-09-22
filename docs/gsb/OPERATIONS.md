@@ -2,14 +2,14 @@
 
 ## Deployment resources
 
-- GitHub: `wesleyzhao/parlor`, branch `gsb-classmates`.
-- Worktree: `/Users/wesley/projects/parlor-gsb`.
-- Vercel: `wesleyzhaos-projects/gsb-classmates`.
+- GitHub: `wesleyzhao/classmates`, branch `main` (clean public history).
+- Checkout: `/Users/wesley/projects/parlor-public-source`.
+- Vercel: `wesleyzhaos-projects/gsb-classmates`, same production URL and data.
 - Neon: `gsb-classmates-db`, free plan, separate from Parlor.
 - Blob: `gsb-classmates-portraits`, private, iad1.
 - Time zone for daily rating caps: `America/Los_Angeles`.
 
-The new Vercel project was disconnected from automatic Git deployments after linking automatically chose the shared repository. Deploy explicitly from this branch until branch-specific Git automation is configured. This avoids accidental deployments from Parlor main. Original Parlor deployment settings were not changed.
+Git pushes to `main` deploy automatically. Other branches do not deploy. See [LAUNCH.md](LAUNCH.md) before promoting changes; keep the original private repository's history separate.
 
 Required production variables: `APP_PROFILE=gsb`, `APP_ORIGIN=https://gsb-classmates.vercel.app`, `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, and a random `AUTH_SECRET` of at least 32 characters. Provider credentials stay in Vercel environment variables and ignored `.env.local`, never in Git or documentation. The first runtime dependencies remain the Neon driver plus the server-only Vercel Blob SDK; browser code adds none.
 
@@ -22,6 +22,14 @@ Descope configuration: Magic Link API/SDK enabled, expiration 15 minutes, defaul
 The managed-provider adapter is `server/gsb/descope.js`. The app stores a separate hashed, origin-bound challenge, sends it with the provider redirect, then requires Descope's server verification response to confirm the exact recipient's verified email. A challenge alone cannot sign in. GET requests never consume credentials; the browser removes query credentials into the fragment, then an explicit confirmation posts the two proofs. See [send API](https://docs.descope.com/api/magic-link/email/sign-in-auto-sign-up) and [verify API](https://docs.descope.com/api/magic-link/verification/verify-token).
 
 Resend remains an alternative in `deliverLink(email,url)`: remove `DESCOPE_PROJECT_ID`, set `RESEND_API_KEY` and `EMAIL_FROM` at a verified domain, and redeploy. Provider changes do not replace accounts, progress, ratings, or app sessions. Existing Descope links should expire before removing that provider.
+
+### Email wording and daily limits
+
+Checked September 21, 2026: [Descope's Free plan](https://www.descope.com/pricing) includes up to **1,000 emails per day** and 7,500 monthly active users. The application's existing shared limiter is **90 sign-in requests per 24-hour bucket**, plus three per recipient and ten per IP per fifteen minutes. Failed requests can consume limiter capacity; this is not an inbox-delivery counter. Provider limits and throttles still apply.
+
+The managed **Descope / System** sender locks its email template. Its console explicitly disables New Template until a custom connector is selected; [provider documentation](https://docs.descope.com/auth-methods/magic-link/settings) confirms this restriction. Production still uses that template. Do not claim that editing app files changes managed email copy.
+
+`server/gsb/login-email.js` holds the requested “Hi there,” / “Click on the button below to log-in to the GSB faces game” / **Log In Now** message in HTML and plain text. The Resend adapter and isolated preview share it. `CLASSMATES_EMAIL_NAME` customizes the game name for forks. To activate this copy for real recipients, configure a custom sender with a verified sending domain (or a Descope custom messaging connector). No domain, paid plan or sender switch was made in this release.
 
 ## Database and import
 
@@ -75,17 +83,15 @@ An operator-only recovery script can issue the explicitly configured owner's pre
 
 Ordinary browser automation runs on **3138**, separately from the real preview on **3137**. The enabled guest suite runs on **3139** in `gsb_test_guest`, with fictional silhouettes and `/tmp/gsb-guest-mail.jsonl`. Guest HTTP integration uses `gsb_test_guest_api`. Run the browser suites sequentially for predictable screenshots and database load. For a manual synthetic preview, run the webServer command from the relevant Playwright config. Request a test stanford.edu address in the form, retrieve its link from the local test outbox, and open it. No email is sent. Use synthetic accounts only. Do not deploy the test configuration.
 
-Deploy from the linked worktree with `vercel --prod --yes --scope wesleyzhaos-projects` after checks pass. Use that explicit scope for project and log commands too. Verify `/api/health`, the public login page, protected API denial without a session, and an actual verified email flow. The outbox does not prove real delivery.
+Deploy by pushing the reviewed, tested source to the public repository's `main` branch. Use that explicit scope for project and log commands too. Verify `/api/health`, the public login page, protected API denial without a session, and an actual verified email flow. The outbox does not prove real delivery.
 
 The speed-round release requires the additive `gsb_sprint_runs` migration before deploying. `npm run gsb:migrate` applies it idempotently. `/speed` is authenticated and independent of the guest flag. Its result ledger does not change multiplayer Elo or practice progress. Expired unfinished runs are cleaned in bounded batches during preparation; completed records are retained. See [SPEED-ROUND.md](SPEED-ROUND.md) for timing, comparison groups, and Claude's integration contract.
 
 ## Guest experiment controls
 
-The eight-face guest mode is implemented but **off on real localhost and production**. Keep `GSB_GUEST_PREVIEW` and `GSB_GUEST_PERSON_IDS` unset. `GET /api/session` must report `guest.enabled: false`; `/api/guest`, `/api/guest/start`, and `/api/guest/media/...` must return 404. A URL such as `/guest?enabled=true` cannot activate it.
+The production guest experiment is enabled with a fixed approved ten-person sample and `CLASSMATES_LANDING=quick`. Signed-out visitors go directly to 3-2-1, then ten faces with two named drop targets. The result requires verified sign-in to continue. Signed-in visitors default to the same two-choice interaction. Four-choice Speed, other directions, Practice and multiplayer remain available.
 
-For a future explicitly requested experiment, choose an approved public sample of 8 to 32 opaque person IDs, set `GSB_GUEST_PERSON_IDS` to those comma-separated IDs, set `GSB_GUEST_PREVIEW=true`, and redeploy. These are server variables, never public build variables. The fixed sample bounds disclosure even when someone clears cookies. Removing the flag and redeploying blocks existing guest cookies and media requests. Normal Stanford login and private practice stay independent of the feature. No real sample was selected as part of this release.
-
-The additive migration creates `gsb_guest_runs` even while disabled. See [GUEST-ROUND.md](GUEST-ROUND.md) for first-completion, score claiming, expiry, cleanup, and the same-browser email-link requirement.
+Forks default to guest mode off. Enabling requires both `GSB_GUEST_PREVIEW=true` and `GSB_GUEST_PERSON_IDS` with 10 to 32 approved opaque IDs. These server variables stay outside Git. Disabling the flag blocks guest routes/media; the full class deck always requires a session. See [GUEST-ROUND.md](GUEST-ROUND.md) for claims, expiry and live exclusions.
 
 ## The test door
 

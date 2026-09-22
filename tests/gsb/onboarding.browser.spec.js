@@ -33,6 +33,7 @@ test("preview starts at countdown, captures email, creates nickname, saves guest
   await expect(game.locator(".guest-round")).toBeVisible();
   const round = await (await game.request.get("/api/guest")).json();
   expect(round.count).toBe(10);
+  await expect(game.locator(".answer.door")).toHaveCount(2);
   for (let i = 0; i < 10; i++) {
     await expect(game.getByText(`${i + 1} / 10`, { exact: true })).toBeVisible();
     await game.locator(".guest-round .answer").nth(Number(round.questions[i].correctChoice)).tap();
@@ -42,11 +43,11 @@ test("preview starts at countdown, captures email, creates nickname, saves guest
   await sendLink(game, email);
   await page.getByRole("button", { name: "Refresh inbox" }).click();
   const message = page.locator("article").filter({ hasText: email });
-  await expect(message).toContainText("Your Classmates sign-in link");
+  await expect(message).toContainText("Log in to the GSB faces game");
   await mkdir(`output/gsb-screenshots/${browserName}`, { recursive: true });
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/onboarding-inbox.png`, fullPage: true });
   const emailTab = page.context().waitForEvent("page");
-  await message.getByRole("link", { name: "Sign in to Classmates" }).click();
+  await message.getByRole("link", { name: "Log In Now" }).click();
   const signup = await emailTab;
   await signup.getByRole("button", { name: "Continue to Classmates" }).click();
   await expect(signup.getByLabel("Nickname", { exact: true })).toHaveValue(email.split("@")[0]);
@@ -58,6 +59,8 @@ test("preview starts at countdown, captures email, creates nickname, saves guest
   await signup.getByRole("button", { name: "Save nickname" }).click();
   await expect(signup.getByText(/Speed round saved:/)).toBeVisible();
   await expect(signup.getByRole("button", { name: "10 classmates", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await signup.getByRole("button", {name:"Start the clock"}).click();
+  await expect(signup.locator(".sprint-play .answer.door")).toHaveCount(2);
   await signup.close(); await game.close();
   const nextTab = page.waitForEvent("popup");
   await page.getByRole("button", { name: "Start a fresh visitor" }).click();

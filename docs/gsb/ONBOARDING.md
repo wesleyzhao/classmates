@@ -2,7 +2,7 @@
 
 ## Entry behavior
 
-An unauthenticated visit to `/` or `/guest`, with the guest experiment enabled, opens directly at 3-2-1. Ten portraits preload during the count. There is no nickname form or start button before that round. The result requires an eligible email link to save or continue.
+An unauthenticated visit to `/` or `/guest`, with the guest experiment enabled, opens directly at 3-2-1. Ten portraits preload during the count, then play uses two named drop targets with drag, flick or tap input. There is no nickname form or start button before that round. The result requires an eligible email link to save or continue.
 
 `/door/CODE` is intentionally different: it grants an unverified tester account while the operator's door is open. That new account still needs a nickname. A tester session is a signed-in session, including in an incognito window that already opened the door. To test the public first visit, use the plain site URL in a fresh browser context. Do not close the door or delete tester accounts just to simulate a new visitor.
 
@@ -22,7 +22,7 @@ npm run preview:onboarding
 
 Open `http://127.0.0.1:3140/api/preview`. Start a fresh visitor, play ten fictional faces, and enter the suggested fresh address on the result. Refresh the test inbox, open the captured link, and save the nickname. The score is claimed through the real application flow. Repeat with Start a fresh visitor.
 
-The inbox is a functional message preview, not a reproduction of Descope's hosted email styling. Production still sends through the configured provider to the entered address. To inspect that actual message, request a link at the production `/login` page and view it in the recipient's mailbox. An existing production account will keep its nickname; do not reset it to test onboarding.
+The inbox previews the requested custom-sender copy from `server/gsb/login-email.js`, including the **Log In Now** button. Descope's live System template remains locked until a custom connector is configured; this preview does not imply that the managed email has changed. Production still sends through the configured provider to the entered address. To inspect that actual message, request a link at the production `/login` page and view it in the recipient's mailbox. An existing production account will keep its nickname; do not reset it to test onboarding.
 
 Safety boundaries:
 

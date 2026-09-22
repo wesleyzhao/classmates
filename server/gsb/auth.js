@@ -4,6 +4,7 @@ import { appendFile } from "node:fs/promises";
 import { PlatformError } from "../../public/shared/errors.js";
 import { sendDescopeLink, verifyDescopeLink } from "./descope.js";
 import { emailDomains } from './site-config.js';
+import { loginEmail } from "./login-email.js";
 import { invitePath } from '../../public/gsb/invite-path.js';
 const token = () => randomBytes(32).toString("base64url");
 /** Keep provider details in the session ledger; callers depend only on the verified access class.
@@ -83,6 +84,7 @@ export async function deliverLink(email, url) {
       "Login email is being connected. Please try again later.",
     );
   if (process.env.DESCOPE_PROJECT_ID) return sendDescopeLink(email, url);
+  const { subject, text, html } = loginEmail(url);
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     signal: AbortSignal.timeout(10000),
@@ -93,8 +95,7 @@ export async function deliverLink(email, url) {
     body: JSON.stringify({
       from: process.env.EMAIL_FROM,
       to: email,
-      subject: "Your Classmates sign-in link",
-      text: `Sign in to Classmates:\n\n${url}\n\nThis link expires in 15 minutes and works once. If you did not request it, you can ignore this email.`,
+      subject, text, html,
     }),
   });
   if (!response.ok)

@@ -179,7 +179,7 @@ test("length changes keep an in-flight twenty and a failed start retries the sel
   await page.getByRole("button", { name: "10 classmates", exact: true }).click();
   releasePhotos();
   await expect(page.getByRole("button", { name: "Start the clock" })).toBeVisible();
-  expect(requests).toEqual([{ direction: "mixed", length: "short" }]);
+  expect(requests).toEqual([{ direction: "mixed", length: "short", choices: 4 }]);
   expect(new Set(images).size).toBe(images.length);
   await page.route("**/api/sprint/start", route => route.fulfill({ status: 503, json: { error: "Start failed. Please retry." } }), { times: 1 });
   await page.getByRole("button", { name: "Start the clock" }).click();
@@ -240,7 +240,7 @@ test("continuous sprint has no inter-question HTTP, survives a failed save, and 
   await page.reload();
   await expect(page.getByText("Saved to your speed records.", { exact: true })).toBeVisible();
   await expect(page.locator(".sprint-records")).toContainText("Fastest 100%");
-  const record = await (await page.request.get("/api/sprint/records?direction=face&length=short")).json();
+  const record = await (await page.request.get("/api/sprint/records?direction=face&length=short&choices=2")).json();
   expect(record.fastestPerfect.correct).toBe(20);
   expect(record.bestScore.score).toBeGreaterThanOrEqual(20000);
   await page.setViewportSize({ width: 1365, height: 900 });
@@ -346,6 +346,13 @@ test("small-phone answer targets stay visible and still with long names in eithe
       return { x: r.x, y: r.y, w: r.width, h: r.height, bottom: r.bottom };
     }));
     const before = await bounds();
+    if (direction === "face") {
+      const labels = await page.locator(".answer.door .plate .pname").evaluateAll(names => names.map(name => {
+        const text = name.getBoundingClientRect(), plate = name.parentElement.getBoundingClientRect();
+        return {top:text.top,bottom:text.bottom,plateTop:plate.top,plateBottom:plate.bottom};
+      }));
+      for (const label of labels) { expect(label.top).toBeGreaterThanOrEqual(label.plateTop); expect(label.bottom).toBeLessThanOrEqual(label.plateBottom); }
+    }
     for (const r of before) {
       expect(r.x).toBeGreaterThanOrEqual(0);
       expect(r.x + r.w).toBeLessThanOrEqual(320);
@@ -356,6 +363,7 @@ test("small-phone answer targets stay visible and still with long names in eithe
     await page.locator(".sprint-play .answer").first().click();
     await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id", round.questions[1].id);
     expect(await bounds()).toEqual(before);
+    await expect(page.locator(".sprint-play .dealt")).toHaveCount(0);
     await mkdir(`output/gsb-screenshots/${browserName}`, { recursive: true });
     await page.screenshot({ path: `output/gsb-screenshots/${browserName}/sprint-narrow-${direction}.png` });
     await page.getByRole("button", { name: "Leave round" }).click();
@@ -421,7 +429,7 @@ test("a ten-classmate round in both directions ends with a review, and the next 
   await page.getByRole("button", { name: "Start the clock" }).click();
   for (const [i, q] of round.questions.entries()) {
     await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id", q.id);
-    const choice = i === 0 ? (Number(q.correctChoice) + 1) % 4 : Number(q.correctChoice);
+    const choice = i === 0 ? (Number(q.correctChoice) + 1) % q.choices.length : Number(q.correctChoice);
     await page.locator(".sprint-play .answer").nth(choice).click();
   }
   await expect(page.locator(".sprint-result")).toContainText("9 of 10 correct");
@@ -458,7 +466,7 @@ test("a speed challenge shares one round between two classmates and ranks them",
   await guest.getByRole("button", { name: "Start the clock" }).click();
   for (const [i, q] of run.questions.entries()) {
     await expect(guest.locator(".sprint-play")).toHaveAttribute("data-question-id", q.id);
-    await guest.locator(".sprint-play .answer").nth(i === 0 ? (Number(q.correctChoice) + 1) % 4 : Number(q.correctChoice)).click();
+    await guest.locator(".sprint-play .answer").nth(i === 0 ? (Number(q.correctChoice) + 1) % q.choices.length : Number(q.correctChoice)).click();
   }
   await expect(guest.locator(".sprint-result")).toContainText("19 of 20 correct");
   await expect(guest.getByText("Saved to your speed records.", { exact: true })).toBeVisible();
@@ -561,4 +569,30 @@ test("a duel starts both players on the host's count, shows the other's progress
   await expect(guest).toHaveURL(new RegExp(`/speed/${next.code}$`));
   await expect(page.locator(".seats li")).toHaveCount(2, { timeout: 10000 });
   await other.close();
+});
+
+
+test("default two-door solo accepts arrows and keeps classic four-choice play selectable", async ({page}) => {
+  await login(page);
+  const round = await prepare(page);
+  expect(round.choices).toBe(2);
+  await expect(page.locator(".sprint-play .answer.door")).toHaveCount(2);
+  await page.keyboard.press("3"); await page.keyboard.press("4");
+  await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",round.questions[0].id);
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",round.questions[1].id);
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",round.questions[2].id);
+  await page.getByRole("button",{name:"Leave round"}).click();
+  await page.getByRole("button",{name:"Play a speed round"}).click();
+  await expect(page.getByRole("button",{name:"Start the clock"})).toBeVisible();
+  const prepared = page.waitForResponse(r=>r.url().endsWith("/api/sprint/prepare") && r.ok() && r.request().postDataJSON()?.choices===4);
+  await page.getByRole("combobox",{name:"Match",exact:true}).selectOption("classic");
+  const classic = await (await prepared).json();
+  expect(classic.choices).toBe(4);
+  await page.getByRole("button",{name:"Start the clock"}).click();
+  await expect(page.locator(".sprint-play .answer")).toHaveCount(4);
+  await expect(page.locator(".sprint-play .answer.door")).toHaveCount(0);
+  await page.keyboard.press("4");
+  await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",classic.questions[1].id);
 });

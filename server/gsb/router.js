@@ -214,7 +214,7 @@ export function createGsbHandler(deps = {}) {
         if (p.length === 2 && method === "POST") {
           await limit(`challenge-create:${account.id}`, 10, 3600000);
           const b = await readJsonBody(req, { maxBytes: 4096 });
-          return sendJson(res, 201, await createChallenge(db, account, deck, b.direction, b.length, b.mode ?? "solo"));
+          return sendJson(res, 201, await createChallenge(db, account, deck, b.direction, b.length, b.mode ?? "solo", b.choices));
         }
         if (p.length === 4 && p[3] === "join" && method === "POST") {
           await limit(`challenge-join:${account.id}`, 60, 3600000);
@@ -243,13 +243,13 @@ export function createGsbHandler(deps = {}) {
       if (p[0] === "sprint" && p.length === 2) {
         if (p[1] === "records" && method === "GET") {
           const deck = await (deps.latestDeck ?? latestDeck)();
-          return sendJson(res, 200, await sprintRecords(db, account, deck, q.direction, q.length));
+          return sendJson(res, 200, await sprintRecords(db, account, deck, q.direction, q.length, q.choices === undefined ? 4 : Number(q.choices)));
         }
         if (p[1] === "prepare" && method === "POST") {
           await limit(`sprint-prepare:${account.id}`, 20, 60000);
           const b = await readJsonBody(req, { maxBytes: 4096 });
           const deck = await (deps.latestDeck ?? latestDeck)();
-          return sendJson(res, 200, await prepareSprint(db, account, deck, b.direction, b.length));
+          return sendJson(res, 200, await prepareSprint(db, account, deck, b.direction, b.length, b.choices));
         }
         if (p[1] === "start" && method === "POST") {
           await limit(`sprint-start:${account.id}`, 40, 60000);

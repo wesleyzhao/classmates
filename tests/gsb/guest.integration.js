@@ -91,7 +91,7 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.equal(started.data.status, "ready");
   assert.equal(started.data.questions.length, 10);
   assert.equal(new Set(started.data.questions.map((q) => q.image )).size, 10);
-  assert.ok(started.data.questions.every((q) => q.choices.length === 4 && q.choices.every((c) => /^Student [0-9]$/.test(c.label))));
+  assert.ok(started.data.questions.every((q) => q.choices.length === 2 && q.choices.every((c) => /^Student [0-9]$/.test(c.label))));
   const guestCookie = started.cookie;
   const secret = guestCookie.split("=")[1];
   const [row] = await db.query("select doc from gsb_guest_runs where hash=$1", [hash(secret)]);
@@ -110,7 +110,7 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
 
   const before = await db.query("select (select count(*) from gsb_matches) as matches,(select count(*) from gsb_ratings) as ratings");
   const answers = started.data.questions.map((q) => ({ questionId: q.id, choice: q.correctChoice, elapsedMs: 1000 }));
-  const wrong = answers.map((a) => ({ ...a, choice: String((Number(a.choice) + 1) % 4) }));
+  const wrong = answers.map((a) => ({ ...a, choice: String((Number(a.choice) + 1) % 2) }));
   const results = await Promise.all([answers, wrong].map((a) => request("/api/guest/finish", { method: "POST", cookie: guestCookie, body: { answers: a } })));
   assert.ok(results.every((r) => r.status === 200));
   assert.deepEqual(results[0].data, results[1].data);

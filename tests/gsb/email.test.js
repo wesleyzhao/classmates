@@ -7,6 +7,7 @@ import {
 } from "../../server/gsb/descope.js";
 import { loginLink } from "../../public/gsb/login-link.js";
 import { requestLink, consumeLink, authenticate, hash, cookieName } from "../../server/gsb/auth.js";
+import { loginEmail } from "../../server/gsb/login-email.js";
 import { invitePath } from "../../public/gsb/invite-path.js";
 process.env.DESCOPE_PROJECT_ID = "test-project";
 process.env.APP_ORIGIN = "https://classmates.example";
@@ -164,4 +165,16 @@ test("managed email sign-in and restored sessions expose the same verified acces
   for (const access of ["descope", "email", "door", "owner-preview"])
     assert.equal((await authenticate({ query: async () => [{ ...account, access }] }, req)).access,
       access === "descope" ? "email" : access);
+});
+
+
+test("custom delivery and preview share the requested login copy, with safe HTML links", () => {
+  const url = "https://classmates.example/login#token=test&returnTo=/speed/ABCD";
+  const message = loginEmail(url);
+  assert.equal(message.intro, "Click on the button below to log-in to the GSB faces game");
+  assert.equal(message.button, "Log In Now");
+  assert.ok(message.text.includes(url));
+  assert.ok(message.html.includes("test&amp;returnTo="));
+  assert.ok(loginEmail(url, "<Fork>").html.includes("&lt;Fork&gt;"));
+  assert.throws(() => loginEmail("javascript:alert(1)"));
 });

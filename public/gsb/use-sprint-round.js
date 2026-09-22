@@ -32,6 +32,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
   const storageKey = challenge ? `${account.id}:${challenge}` : account.id;
   const [restored] = useState(() => readPending(storageKey));
   const pending = useRef(restored);
+  const [choices, setChoices] = useState(pending.current ? pending.current.choices ?? 4 : 2);
   const [direction, setDirection] = useState(pending.current?.direction || "face"),
     [length, setLength] = useState(pending.current?.length || (Object.hasOwn(LENGTHS, initialLength) ? initialLength : "short")),
     [phase, setPhase] = useState(pending.current ? "result" : "setup"),
@@ -54,7 +55,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     current = useRef(null), clock = useRef(null), saveLock = useRef(false),
     preparing = useRef(false), next = useRef(null), ticket = useRef(0),
     buffer = useRef(null), loadingSpec = useRef(null);
-  current.current = { round, answers, phase, direction, length };
+  current.current = { round, answers, phase, direction, length, choices };
   const elapsedNow = () => clock.current
     ? Math.max(1, Math.round(Math.max(performance.now() - clock.current.monotonic, Date.now() - clock.current.wall))) : 0;
   // The round behind the result screen: its own media and abort, adopted by the next prepare when settings match.
@@ -83,11 +84,11 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     if (!saved || phase !== "result") return undefined;
     let active = true;
     const controller = new AbortController();
-    api(`sprint/records?direction=${direction}&length=${length}`, undefined, {signal:controller.signal})
+    api(`sprint/records?direction=${direction}&length=${length}&choices=${round?.choices ?? choices}`, undefined, {signal:controller.signal})
       .then(data => { if (active) { buffer.current?.updateRecords(length, data); setRecords(data); } })
       .catch(e => active && setError(e.message));
     return () => { active = false; controller.abort(); };
-  }, [direction, length, saved, phase]);
+  }, [direction, length, choices, saved, phase]);
 
   const save = async () => {
     if (saveLock.current || !pending.current) return;
@@ -129,7 +130,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     // A prepare that a setting change superseded must not touch the round that replaced it.
     const mine = ++ticket.current;
     const live = () => alive.current && mine === ticket.current;
-    if (n && n.direction === c.direction && n.length === c.length) {
+    if (n && n.direction === c.direction && n.length === c.length && n.choices === c.choices) {
       // The round behind the result screen: take it as it is, or wait for the rest of its photos.
       next.current = null; abort.current = n.abort;
       loadingSpec.current = { direction: n.direction, length: n.length };
@@ -153,7 +154,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     try {
       await history.flush();
       if (!live()) return;
-      const data = challenge ? await api(`sprint/challenge/${challenge}/join`, {}, {signal:controller.signal}) : await api("sprint/prepare", { direction: c.direction, length: c.length }, {signal:controller.signal});
+      const data = challenge ? await api(`sprint/challenge/${challenge}/join`, {}, {signal:controller.signal}) : await api("sprint/prepare", { direction: c.direction, length: c.length, choices: c.choices }, {signal:controller.signal});
       if (!live()) return;
       if (challenge) { setRound(data); setRecords(data.records); }
       else {
@@ -162,7 +163,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
         setRound(selected); setRecords(selected.records);
       }
       if (challenge) {
-        setDirection(data.direction); setLength(data.length); setStandings(data.standings);
+        setDirection(data.direction); setLength(data.length); setChoices(data.choices ?? 4); setStandings(data.standings);
         duel.current = data.mode === "duel";
         if (typeof data.now === "number") offset.current = data.now - Date.now();
         setChallengeInfo({ code: data.code, hostId: data.hostId, expiresAt: data.expiresAt, mode: data.mode, choices: data.choices, selectionVersion: data.selectionVersion, startsAt: Math.max(data.startsAt ?? 0,data.startedAt ?? 0) || null, startedAt: data.startedAt, nextCode: data.nextCode });
@@ -202,9 +203,9 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     }
     const timer = setTimeout(() => {
       const c = current.current;
-      const slot = { abort: new AbortController(), media: null, data: null, ready: false, loaded: 0, total: 0, direction: c.direction, length: c.length, report: null, promise: null };
+      const slot = { abort: new AbortController(), media: null, data: null, ready: false, loaded: 0, total: 0, direction: c.direction, length: c.length, choices: c.choices, report: null, promise: null };
       slot.promise = (async () => {
-        const data = await api("sprint/prepare", { direction: slot.direction, length: slot.length }, {signal:slot.abort.signal});
+        const data = await api("sprint/prepare", { direction: slot.direction, length: slot.length, choices: slot.choices }, {signal:slot.abort.signal});
         if (slot.abort.signal.aborted) throw new Error("Photo loading was cancelled.");
         slot.data = data;
         slot.media = await prepareRoundMedia(data.questions, { signal: slot.abort.signal, onProgress: (loadedCount, total) => { slot.loaded = loadedCount; slot.total = total; slot.report?.(loadedCount, total); } });
@@ -278,7 +279,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
   const createChallenge = async ({ mode = "solo" } = {}) => {
     const c = current.current;
     setError("");
-    try { return (await api("sprint/challenge", mode === "duel" ? { direction: "face", length: "quick", mode } : { direction: c.direction, length: c.length })).code; }
+    try { return (await api("sprint/challenge", mode === "duel" ? { direction: "face", length: "quick", mode } : { direction: c.direction, length: c.length, choices: c.choices })).code; }
     catch (e) { if (alive.current) setError(e.message); return null; }
   };
   const start = async () => {
@@ -323,7 +324,7 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
     if (nextAnswers.length === c.round.count) {
       const elapsedMs = elapsedNow(), scored = scoreSprint(c.round.questions, nextAnswers, elapsedMs);
       current.current.phase = "result";
-      const payload = { id: c.round.id, epoch:c.round.historyEpoch ?? "0", direction, length, answers: nextAnswers, elapsedMs, result: scored };
+      const payload = { id: c.round.id, epoch:c.round.historyEpoch ?? "0", direction, length, choices: c.round.choices ?? 4, answers: nextAnswers, elapsedMs, result: scored };
       pending.current = payload; remember(storageKey, payload);
       setResult(scored); setPhase("result"); save();
     } else media.current?.warm((c.round.mediaOffset ?? 0) + nextAnswers.length).catch(() => {});
@@ -337,10 +338,12 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
       }
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey ||
         event.target?.closest?.("input,textarea,select,[contenteditable]")) return;
-      if (!/^[1-4]$/.test(event.key)) return;
       const c = current.current, q = c.round?.questions[c.answers.length];
       if (c.phase !== "playing" || !q) return;
-      event.preventDefault(); choose(q.id, String(Number(event.key) - 1));
+      const index = q.choices.length === 2 && event.key === "ArrowLeft" ? 0
+        : q.choices.length === 2 && event.key === "ArrowRight" ? 1 : /^[1-4]$/.test(event.key) ? Number(event.key) - 1 : -1;
+      if (!q.choices[index]) return;
+      event.preventDefault(); choose(q.id, q.choices[index].id);
     };
     window.addEventListener("keydown", key, true);
     return () => window.removeEventListener("keydown", key, true);
@@ -371,11 +374,15 @@ export function useSprintRound(account, { challenge = null, initialLength = "sho
   };
   const question = round?.questions[answers.length];
   return {
-    phase, direction, length, round, question, loaded, answers, result, records, error,
+    phase, direction, length, choices, round, question, loaded, answers, result, records, error,
     saved, saving, unsavable, elapsed, photoUrls: media.current?.urls,
     challenge: challenge ? { code: challenge, ...(challengeInfo || {}), standings, goAt } : null,
     prepare, start, choose, save, createChallenge, ready, begin, rematch,
-    changeDirection(value) { if (DIRECTIONS.includes(value) && value !== current.current.direction) reconfigure(() => setDirection(value)); },
+    changeDirection(value) {
+      const nextDirection = value === "classic" ? "face" : value, nextChoices = value === "face" ? 2 : 4;
+      if (DIRECTIONS.includes(nextDirection) && (nextDirection !== current.current.direction || nextChoices !== current.current.choices))
+        reconfigure(() => { current.current.direction = nextDirection; current.current.choices = nextChoices; setDirection(nextDirection); setChoices(nextChoices); });
+    },
     changeLength,
   };
 }

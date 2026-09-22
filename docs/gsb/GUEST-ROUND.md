@@ -18,17 +18,17 @@ Guest scores are personal, unranked results. They never enter competitive Speed 
 
 `public/gsb/guest-round.js` owns media through `prepareRoundMedia`, the same bounded loader used by Speed. The first guest screen is a centered 3-2-1 countdown, with no introduction, length selector or start button. Round creation and photo preparation run alongside the countdown. All ten images must be downloaded and decoded before the first question starts; on a slow connection the final beat waits for them without consuming any answer time. Returning from a hidden tab during the countdown restarts it, so no question times out unseen. A failed preload has a retry and releases partial object URLs.
 
-Each question allows eight seconds. A tap, number key (1 through 4), or flick advances immediately. Correct/wrong animation runs independently; no HTTP request or animation timeout separates questions. The displayed question ID is consumed synchronously to reject duplicate events. Held number keys do not repeat. A timeout records a null answer and advances.
+Each question allows eight seconds. New rounds have exactly two names, sharing the duel's named bodies and portrait drop interaction. A tap, left/right drag or flick, arrow key, or number key (1 or 2) advances immediately. Correct/wrong animation runs independently; no HTTP request or animation timeout separates questions. The displayed question ID is consumed synchronously to reject duplicate events. Held number keys do not repeat. A timeout records a null answer and advances.
 
 The browser keeps only opaque run/question IDs, answer indices, elapsed times and the current timer in localStorage, allowing interrupted attempts to resume after a tab closes. Older sessionStorage attempts still restore. Names, photos and authentication credentials are never persisted there. A failed finish keeps the answer log for retry; success clears it. Media object URLs live only in memory and are revoked on exit.
 
-`sprint-pieces.js` shares the portrait/body and corner answer artwork with signed-in Speed. Keep result feedback and inline form errors inside the full-screen cabinet. Shell-level messages can be obscured by that panel.
+`two-door-pieces.js` shares the named bodies, portrait and gesture mapping with signed-in Speed and Duel. Previously issued four-choice guest attempts still render with `sprint-pieces.js` and restore normally. Keep result feedback and inline form errors inside the full-screen cabinet. Shell-level messages can be obscured by that panel.
 
 ## API and authorization
 
 - `GET /api/session` exposes only `{guest:{enabled,count}}`, never allowlist IDs.
 - `POST /api/guest/start` creates or resumes one run; `GET /api/guest` reads it.
-- `POST /api/guest/finish` accepts ordered `{answers:[{questionId,choice,elapsedMs}]}`. Choices are string indices 0 through 3 or null; elapsed times are bounded integers. The server scores all answers, stores one result atomically and returns that first result on retries/concurrent finishes. Existing eight-question documents remain scoreable by their own length.
+- `POST /api/guest/finish` accepts ordered `{answers:[{questionId,choice,elapsedMs}]}`. Choices must match an issued answer ID (0 or 1 for new rounds, 0 through 3 for older rounds), or null; elapsed times are bounded integers. The server scores all answers, stores one result atomically and returns that first result on retries/concurrent finishes. Existing eight-question documents remain scoreable by their own length.
 - `GET /api/guest/media/ASSET` requires the cookie, the exact assigned target asset, the current allowlist and a non-excluded person. Historical/alternate assets and the full `/api/media` route remain denied.
 - Authenticated `POST /api/guest/claim` attaches a completed result once to a verified email account. `GET /api/guest/best` returns its best valid personal guest result.
 

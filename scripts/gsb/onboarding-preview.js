@@ -1,6 +1,7 @@
 // Local-only first-visit rehearsal with fictional people and an in-memory email inbox, never production identity.
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { loginEmail } from "../../server/gsb/login-email.js";
 import { readFile } from "node:fs/promises";
 
 /** Only loopback requests from our own page can inspect the preview inbox or reset its browser.
@@ -41,7 +42,7 @@ export async function startOnboardingPreview(port = 3140) {
   const inbox = [];
   const html = await readFile(new URL("./onboarding-preview.html", import.meta.url));
   const app = createGsbHandler({
-    send: async (email, url) => { inbox.unshift({ email, url, receivedAt: new Date().toISOString() }); inbox.length = Math.min(inbox.length, 30); },
+    send: async (email, url) => { inbox.unshift({ email, url, message: loginEmail(url), receivedAt: new Date().toISOString() }); inbox.length = Math.min(inbox.length, 30); },
     guestOptions: { mediaUrl: card => card.image },
   });
   const server = await startDevServer({ port, host: "127.0.0.1", quiet: true, handler: async (req, res) => {

@@ -13,7 +13,7 @@
   <p id="identity" role="status"></p>
   <a href="/" target="classmates-preview" rel="noopener">Open the game</a>
   <h2>Test inbox</h2>
-  <p class="muted">Links here exercise the real app authentication flow with local delivery. This is a functional preview of the message, not Descope's hosted email design. Nothing is sent to an actual inbox.</p>
+  <p class="muted">Links here exercise the real app authentication flow with local delivery. This shows the requested copy for a custom sender. Live Descope emails still use its locked System template until a custom sender is connected. Nothing is sent to an actual inbox.</p>
   <button id="refresh" class="btn">Refresh inbox</button>
   <p id="status" role="status"></p><div id="messages"></div>
 </main><script type="module">
@@ -30,11 +30,13 @@ async function refresh() {
   for (const message of data.messages) {
     const card = document.createElement('article'); card.className = 'gsb-card';
     const recipient = document.createElement('p'); recipient.textContent = 'To: ' + message.email;
-    const title = document.createElement('h3'); title.textContent = 'Your Classmates sign-in link';
-    const link = document.createElement('a'); link.textContent = 'Sign in to Classmates'; link.href = message.url;
+    const title = document.createElement('h3'); title.textContent = message.message.subject;
+    const greeting = document.createElement('p'); greeting.textContent = message.message.greeting;
+    const intro = document.createElement('p'); intro.textContent = message.message.intro;
+    const link = document.createElement('a'); link.textContent = message.message.button; link.className = 'btn btn-primary'; link.href = message.url;
     link.target = '_blank'; link.rel = 'noopener';
-    const note = document.createElement('p'); note.textContent = 'This link expires in 15 minutes and works once. If you did not request it, you can ignore this email.';
-    card.append(recipient, title, link, note); fragment.append(card);
+    const note = document.createElement('p'); note.textContent = message.message.note;
+    card.append(recipient, title, greeting, intro, link, note); fragment.append(card);
   }
   document.querySelector('#messages').replaceChildren(fragment);
   status.textContent = data.messages.length ? '' : 'No messages yet.';

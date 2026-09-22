@@ -121,7 +121,7 @@ export async function startGuestRun(db, req, res, deck, options = {}) {
     questions: targets.map((target, index) => {
       const choices = rng.shuffle([
         target,
-        ...rng.shuffle(cards.filter((card) => card.id !== target.id)).slice(0, 3),
+        ...rng.shuffle(cards.filter((card) => card.id !== target.id)).slice(0, 1),
       ]);
       const asset = /^\/api\/media\/([A-Za-z0-9_-]{1,80})$/.exec(target.image);
       if (!options.mediaUrl && !asset)
@@ -160,7 +160,7 @@ export function scoreGuestRun(doc, answers) {
     if (
       !answer ||
       answer.questionId !== question.id ||
-      !(answer.choice === null || (typeof answer.choice === "string" && /^[0-3]$/.test(answer.choice))) ||
+      !(answer.choice === null || (typeof answer.choice === "string" && question.choices.some(c => c.id === answer.choice))) ||
       !Number.isInteger(answer.elapsedMs) ||
       answer.elapsedMs < 0 ||
       answer.elapsedMs > DURATION_MS

@@ -74,3 +74,15 @@ Follow-up verification: all 506 unit tests and the 14 guest browser checks passe
 Two initial browser assertions needed correction: textContent omitted the visual line break, and a named email-link target could reuse an existing tab in Chromium. The copy assertion now checks rendered text and preview email links explicitly open a new tab. Both reruns pass. See [ONBOARDING.md](ONBOARDING.md) for the preview command, privacy boundaries and future design contract. Production needs no migration, environment change or tester-account cleanup.
 
 The final provider review caught a pre-existing guest-claim bug: Descope sessions exposed `access: "descope"`, while guest saving expected `"email"`. Authentication now normalizes the public access class after proof verification and on session restoration, preserving the provider purpose in the database. Added tests cover both paths and an HTTP guest claim with a managed-email session. All 510 unit tests and both guest HTTP integration tests pass; type checking also passes. This does not upgrade door or owner-preview grants to email access.
+
+
+## Two-target default and email follow-up
+
+- [x] Guest root still opens at 3-2-1 with no setup or nickname form, now followed by ten faces and two named drop targets.
+- [x] Signed-in quick landing uses the same interaction. Preserve classic four-choice Speed, name/mixed directions, Practice, Together, Race, challenges and duels.
+- [x] Share the portrait/body markup and left/right gesture mapping across Guest, solo Speed and Duel; add no dependency.
+- [x] Separate records by two/four-choice difficulty; retain prior data, old four-choice guest attempts and pending scores. Preserve both cached halves when changing 20 to 10.
+- [x] Put the requested email copy and Log In Now button in the modular custom-sender renderer and local preview. Verify Descope's live System template is locked and clearly document that live copy is not changed.
+- [x] Verify current published Descope Free allowance: 1,000 emails/day. Keep the app's stricter 90-request daily limiter unchanged.
+- [ ] Complete unit/type/build/privacy checks, isolated database tests, Chromium/WebKit guest/speed/duel/onboarding regressions, and phone/desktop visual review.
+- [ ] Push tested source to main, verify same-URL production deployment, and preserve tester accounts and existing data.

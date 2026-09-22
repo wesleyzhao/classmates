@@ -21,6 +21,15 @@ export function sprintOptions(direction, length) {
   return { direction, length };
 }
 
+/** Validate difficulty independently of scoring; old API callers keep four choices.
+ * @param {string} direction @param {unknown} [choices] @returns {number}
+ */
+export function sprintChoices(direction, choices = 4) {
+  if (choices !== 2 && choices !== 4 || choices === 2 && direction !== "face")
+    fail(400, "sprint_choices", "Choose two names or four choices.");
+  return choices === 2 ? 2 : 4;
+}
+
 function context(deck, direction, length) {
   if (!deck?.id || !Array.isArray(deck.cards) || deck.cards.length < 4)
     fail(503, "sprint_content", "The class deck needs at least four available cards.");
@@ -39,10 +48,11 @@ async function cleanExpired(db) {
 }
 
 /** Return current comparable personal records and class standings. */
-export async function sprintRecords(db, account, deck, direction, length) {
+export async function sprintRecords(db, account, deck, direction, length, choices = 4) {
+  sprintChoices(direction, choices);
   sprintOptions(direction, length);
   const c = context(deck, direction, length), d = dimensions(c);
-  const where = "revision=$1 and cohort=$2 and direction=$3 and length=$4 and count=$5 and scoring_version=$6 and result is not null";
+  const where = "revision=$1 and cohort=$2 and direction=$3 and length=$4 and count=$5 and scoring_version=$6 and coalesce((doc->>'choices')::integer,4)=$8 and result is not null";
   const [row] = await db.query(`
     with runs as (select account_id,result,finished_at from gsb_sprint_runs where ${where}),
     best as (select distinct on (account_id) account_id,result,finished_at from runs order by account_id,(result->>'score')::integer desc,(result->>'elapsedMs')::integer asc,finished_at asc),
@@ -54,7 +64,7 @@ export async function sprintRecords(db, account, deck, direction, length) {
         from (select a.nickname,(b.result->>'score')::integer as score,(b.result->>'correct')::integer as correct,(b.result->>'count')::integer as count,(b.result->>'elapsedMs')::integer as elapsed_ms,b.finished_at from best b join gsb_accounts a on a.id=b.account_id order by score desc,elapsed_ms asc,b.finished_at asc limit 10) leaders), '[]'::jsonb) as leaders,
       coalesce((select jsonb_agg(jsonb_build_object('nickname',nickname,'elapsedMs',elapsed_ms) order by elapsed_ms asc,finished_at asc)
         from (select a.nickname,(p.result->>'elapsedMs')::integer as elapsed_ms,p.finished_at from perfect p join gsb_accounts a on a.id=p.account_id order by elapsed_ms asc,p.finished_at asc limit 10) leaders), '[]'::jsonb) as perfect_leaders
-  `, [...d, account.id]);
+  `, [...d, account.id, choices]);
   return {
     bestScore: row.best_score,
     fastestPerfect: row.fastest_perfect,
@@ -87,7 +97,8 @@ function sequenceViews(order, deck, choices = 4) {
 }
 
 /** Prepare one owner-bound run without starting its timer. */
-export async function prepareSprint(db, account, deck, direction, length) {
+export async function prepareSprint(db, account, deck, direction, length, choices = 4) {
+  sprintChoices(direction, choices);
   sprintOptions(direction, length);
   const c = context(deck, direction, length);
   const rng = makeRng(randomBytes(32).toString("hex"));
@@ -97,23 +108,23 @@ export async function prepareSprint(db, account, deck, direction, length) {
   const [,targets,records,quickRecords] = await Promise.all([
     cleanExpired(db),
     freshTargets(db, [account.id], deck.cards, c.count, rng),
-    sprintRecords(db, account, deck, direction, length),
-    split ? sprintRecords(db, account, deck, direction, "quick") : null,
+    sprintRecords(db, account, deck, direction, length, choices),
+    split ? sprintRecords(db, account, deck, direction, "quick", choices) : null,
   ]);
-  const { order, views } = buildSequence(deck, c, rng, targets);
+  const { order, views } = buildSequence(deck, c, rng, targets, choices);
   const id = randomUUID();
   // Issue both halves in the same write. Selecting 10 later needs no HTTP, and
   // each half already has its own owner, answer order, timer, history and records.
   // These unused alternatives do not count as seen and expire with the full run.
   const segments = split ? Array.from({ length: Math.floor(c.count / quickCount) }, (_, i) =>
     ({ id: randomUUID(), offset: i * quickCount, count: quickCount, length: "quick" })) : [];
-  const runs = [{ id, length, count: c.count, doc: { questions: order } },
-    ...segments.map(s => ({ id: s.id, length: s.length, count: s.count, doc: { questions: order.slice(s.offset, s.offset + s.count) } }))];
+  const runs = [{ id, length, count: c.count, doc: { questions: order, choices } },
+    ...segments.map(s => ({ id: s.id, length: s.length, count: s.count, doc: { questions: order.slice(s.offset, s.offset + s.count), choices } }))];
   await db.query(`insert into gsb_sprint_runs(id,account_id,revision,cohort,direction,length,count,scoring_version,doc,expires_at)
     select r.id,$1,$2,$3,$4,r.length,r.count,$5,r.doc,now()+interval '1 hour'
     from jsonb_to_recordset($6::jsonb) as r(id text,length text,count integer,doc jsonb)`,
   [account.id, c.revision, c.cohort, direction, VERSION, JSON.stringify(runs)]);
-  return { id, direction, length, count: c.count, revision: c.revision, questions: views, records,
+  return { id, direction, length, choices, count: c.count, revision: c.revision, questions: views, records,
     ...(split ? { segments, quickRecords } : {}) };
 }
 
@@ -127,10 +138,11 @@ function challengeCode(code) {
 
 const MODES = ["solo", "duel"];
 /** Create a shared sequence under a fresh code, then join it as the host. A duel has two doors and starts on one count. */
-export async function createChallenge(db, account, deck, direction, length, mode = "solo") {
+export async function createChallenge(db, account, deck, direction, length, mode = "solo", requestedChoices = 4) {
   sprintOptions(direction, length);
   if (!MODES.includes(mode)) fail(400, "challenge_mode", "Choose a challenge kind.");
-  const c = context(deck, direction, length), choices = mode === "duel" ? 2 : 4;
+  const c = context(deck, direction, length), choices = mode === "duel" ? 2 : requestedChoices;
+  sprintChoices(direction, choices);
   const rng = makeRng(randomBytes(32).toString("hex"));
   const { order } = buildSequence(deck, c, rng, await freshTargets(db, [account.id], deck.cards, c.count, rng), choices);
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -146,7 +158,7 @@ export async function rematchChallenge(db, account, deck, code) {
   code = challengeCode(code);
   const challenge = await loadChallenge(db, code);
   if (challenge.next_code) return joinChallenge(db, account, deck, challenge.next_code);
-  const next = await createChallenge(db, account, deck, challenge.direction, challenge.length, challenge.mode);
+  const next = await createChallenge(db, account, deck, challenge.direction, challenge.length, challenge.mode, challenge.doc.choices ?? 4);
   await db.query("update gsb_sprint_challenges set next_code=$2 where code=$1 and next_code is null", [code, next.code]);
   // Two players pressing Rematch at once: the first one's duel is the rematch, and the other follows it.
   const [after] = await db.query("select next_code from gsb_sprint_challenges where code=$1", [code]);
@@ -260,7 +272,7 @@ export async function joinChallenge(db, account, deck, code) {
   }
   const views = sequenceViews(run.doc.questions, deck, run.doc.choices ?? 4);
   if (!views) fail(410, "challenge_stale", "This challenge contains a card that is no longer available.");
-  const records = await sprintRecords(db, account, deck, challenge.direction, challenge.length);
+  const records = await sprintRecords(db, account, deck, challenge.direction, challenge.length, run.doc.choices ?? 4);
   return {
     id: run.id, historyEpoch: run.doc.historyEpoch ?? "0", code, direction: challenge.direction, length: challenge.length, count: challenge.count, revision: challenge.revision,
     hostId: challenge.host_id, expiresAt: new Date(challenge.expires_at).getTime(), questions: views, result: run.result, records,

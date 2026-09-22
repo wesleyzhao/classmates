@@ -24,6 +24,8 @@ test("guest sprint finishes once, retries safely, and saves only after email sig
   });
   const round = await openRound(page);
   expect(round.count).toBe(10);
+  expect(round.questions.every(q => q.choices.length === 2)).toBe(true);
+  await expect(page.locator(".guest-round .answer.door")).toHaveCount(2);
   expect(round.questions).toHaveLength(10);
   expect(new Set(round.questions.map((q) => q.image)).size).toBe(10);
   expect((await page.request.get("/api/deck")).status()).toBe(401);
@@ -31,7 +33,7 @@ test("guest sprint finishes once, retries safely, and saves only after email sig
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-phone.png`, fullPage: true });
   for (let i = 0; i < round.count; i++) {
     await expect(page.getByText(`${i + 1} / 10`, { exact: true })).toBeVisible();
-    const choice = i === 2 ? (Number(round.questions[i].correctChoice) + 1) % 4 : Number(round.questions[i].correctChoice);
+    const choice = i === 2 ? (Number(round.questions[i].correctChoice) + 1) % 2 : Number(round.questions[i].correctChoice);
     await page.locator(".guest-round .answer").nth(choice).tap();
   }
   await expect(page.getByRole("button", { name: "Retry saving round" })).toBeVisible();
@@ -216,4 +218,31 @@ test("a background countdown waits for visibility and held answer keys do not re
   await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
   await page.keyboard.press("1");
   await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "1");
+});
+
+
+test("two doors accept left and right drops and arrow keys, ignoring unavailable choices", async ({ page, browserName }) => {
+  const round = await openRound(page), errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.keyboard.press("3"); await page.keyboard.press("4");
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
+  for (let i=0;i<2;i++) {
+    const piece = await page.locator(".guest-round .piece .slot").boundingBox();
+    const door = await page.locator(".guest-round .answer.door .slot").nth(i).boundingBox();
+    await page.mouse.move(piece.x+piece.width/2,piece.y+piece.height/2);
+    await page.mouse.down();
+    await page.mouse.move(door.x+door.width/2,door.y+door.height/2,{steps:8});
+    await page.mouse.up();
+    await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id",String(i+1));
+  }
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id","3");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id","4");
+  const state = await page.evaluate(id=>JSON.parse(localStorage.getItem(`gsb-guest-attempt:${id}`)),round.id);
+  expect(state.answers.map(a=>a.choice)).toEqual(["0","1","0","1"]);
+  await expect(page.locator(".guest-round .dealt")).toHaveCount(0);
+  await page.setViewportSize({width:1365,height:900});
+  await page.screenshot({path:`output/gsb-screenshots/${browserName}/guest-two-doors-desktop.png`,fullPage:true});
+  expect(errors).toEqual([]);
 });

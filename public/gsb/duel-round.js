@@ -5,13 +5,14 @@ import { html, useEffect, useLayoutEffect, useRef, useState } from "../app/h.js"
 import { ShareLink } from "./components.js";
 import { isSoundOn, setSound } from "./sound.js";
 import { GAME_NAME } from "./brand.js";
+import { doorMarkup, doorPieceMarkup, doorSide } from "./two-door-pieces.js";
 import { sfx } from "./sound.js";
 import { useFlick, dealPiece, flashZone, floater, answerSummary, targetOf, firstName } from "./sprint-arcade.js";
 
 const seconds = (ms) => `${(ms / 1000).toFixed(2)}s`;
 const pad2 = (n) => String(n).padStart(2, "0");
 // Corner 0 or 2 (a left-hand flick) is the left door, 1 or 3 the right one.
-const side = (k) => (k % 2 === 0 ? 0 : 1);
+const side = doorSide;
 
 /** Who is in and how far along: a row of the heads still to clear, shrinking as the player goes. */
 function Lane({ label, me, questions, index, photoUrls, dim = false, leading = false }) {
@@ -127,13 +128,11 @@ export function DuelRound({ account, R, onExit, onChallenge }) {
           <div class="fx" ref=${fx} aria-hidden="true"></div>
           <div class="choices" role="group" aria-label="Answer choices">
             ${question.choices.map((choice, i) => html`<button key=${choice.id} class="answer zone door" data-k=${i} data-state="idle" data-sprint-answer="true" aria-label=${choice.label} onClick=${() => answer(i)}>
-              <span class="plate ${choice.label.length > 15 ? "long" : ""}"><span class="key" aria-hidden="true">${i + 1}</span><span class="tl">Hello, I'm</span><span class="pname">${choice.label}</span></span>
-              <span class="slot"></span>
-              <span class="bod"></span>
+              ${doorMarkup(choice, i)}
             </button>`)}
           </div>
           <div key=${question.id} class="piece is-enter" ref=${piece}>
-            <span class="figure"><span class="slot filled"><img class="portrait" src=${photoUrls.get(question.image)} alt="Classmate portrait" draggable=${false} /></span><span class="bod"></span></span>
+            ${doorPieceMarkup(question, photoUrls)}
           </div>
         </div>
         <div class="strip">${strip.length

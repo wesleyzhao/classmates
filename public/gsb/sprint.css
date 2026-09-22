@@ -224,13 +224,15 @@
 .sprint-duel .lead .ahead, .sprint-duel .lead .ahead b { color: var(--arcade-good); }
 .sprint-duel .lead .behind, .sprint-duel .lead .behind b { color: var(--arcade-bad); }
 /* the doors: the name on top, the place for the head, and the body, no box around any of it */
-.sprint-duel .answer.door { --slot: calc(100 * var(--u)); width: calc(172 * var(--u)); height: calc(288 * var(--u)); top: auto; bottom: 0; justify-content: flex-end; gap: calc(4 * var(--u)); }
+.sprint-duel .answer.door { --slot: calc(100 * var(--u)); width: calc(172 * var(--u)); height: calc(328 * var(--u)); top: auto; bottom: 0; justify-content: flex-end; gap: calc(4 * var(--u)); }
 .sprint-duel .answer.door[data-k="0"] { left: 0; }
 .sprint-duel .answer.door[data-k="1"] { right: 0; left: auto; }
 /* the name tag: "Hello, I'm" in red over the name, the way the sticker has it */
-.sprint-duel .answer.door .plate { width: calc(172 * var(--u)); height: auto; min-height: calc(80 * var(--u)); padding: calc(5 * var(--u)) calc(6 * var(--u)) calc(7 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(3 * var(--u)); border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: #fff; color: var(--arcade-bg); font-size: calc(40 * var(--u)); line-height: 0.92; }
+.sprint-duel .answer.door .plate { width: calc(172 * var(--u)); height: calc(120 * var(--u)); min-height: calc(120 * var(--u)); flex: 0 0 auto; padding: calc(5 * var(--u)) calc(6 * var(--u)) calc(7 * var(--u)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(3 * var(--u)); border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: #fff; color: var(--arcade-bg); font-size: calc(40 * var(--u)); line-height: 0.92; }
 .sprint-duel .answer.door .plate .tl { font-family: var(--font-arcade); font-size: calc(9 * var(--u)); color: var(--arcade-cardinal); text-transform: uppercase; }
-.sprint-duel .answer.door .plate.long { font-size: calc(30 * var(--u)); }
+.sprint-duel .answer.door .plate .pname { font-size: calc(28 * var(--u)); line-height: 1.05; }
+.sprint-duel .answer.door .plate.long .pname { font-size: max(14px, calc(22 * var(--u))); }
+.sprint-duel .answer.door .plate.longest .pname { font-size: max(14px, calc(18 * var(--u))); }
 .sprint-duel .answer.door[data-state="target"] .plate { background: var(--arcade-gold); box-shadow: 0 0 0 3px #fff; }
 .sprint-duel .answer.door .slot { border: 3px dashed var(--arcade-line); background: rgba(255, 255, 255, 0.03); transition: border-color 100ms, background 100ms; }
 .sprint-duel .answer.door[data-state="target"] .slot { border-color: var(--arcade-gold); border-style: solid; background: rgba(254, 197, 29, 0.12); }

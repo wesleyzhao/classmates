@@ -9,6 +9,7 @@ import { GAME_NAME } from "./brand.js";
 import { isSoundOn, setSound, sfx } from "./sound.js";
 import { useFlick, dealPiece, flashZone, floater, answerSummary, targetOf, firstName, introTour } from "./sprint-arcade.js";
 
+import { doorMarkup, doorPieceMarkup, doorSide } from "./two-door-pieces.js";
 import { pieceMarkup, zoneMarkup } from "./sprint-pieces.js";
 
 const seconds = (ms) => `${(ms / 1000).toFixed(2)}s`;
@@ -31,7 +32,7 @@ function Standings({ list, me }) {
 export function SprintRound({ account, onExit, challenge = null, onChallenge = null, initialLength = "short", guestSaved = null }) {
   const R = useSprintRound(account, { challenge, initialLength });
   const {
-    phase, direction, length, round, question, loaded, answers, result, records, error,
+    phase, direction, length, choices, round, question, loaded, answers, result, records, error,
     saved, saving, unsavable, elapsed, photoUrls, challenge: contest,
     prepare, start, choose, save, changeDirection, changeLength, createChallenge,
   } = R;
@@ -55,6 +56,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     } else if (phase === "result") resultHeading.current?.focus();
   }, [phase]);
 
+  const twoDoors = question?.direction === "face" && question?.choices.length === 2;
   // Draw the deal: a copy of the piece flies into the corner while the next question renders underneath.
   // The answer itself is the controller's choose(); nothing here waits for the animation.
   const deal = (k) => {
@@ -62,26 +64,27 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     if (!question || !zone || !fx.current) return;
     const right = question.choices[k]?.id === question.correctChoice;
     if (right) sfx.right(); else sfx.wrong();
-    if (piece.current) dealPiece(fx.current, piece.current, zone, right);
+    if (piece.current) dealPiece(fx.current, twoDoors ? piece.current.querySelector(".slot") : piece.current, twoDoors ? zone.querySelector(".slot") : zone, right);
     flashZone(zone, right);
     const name = firstName(targetOf(question).name);
     floater(fx.current, zone, right ? `✓ ${name}` : question.direction === "face" ? `✗ ${name}` : `✗ Not ${name}`, right);
   };
   const answer = (k) => {
-    if (!question) return;
+    if (!question?.choices[k]) return;
     deal(k);
     choose(question.id, question.choices[k].id);
   };
   // The question exists before play starts, so bind on the phase too: the piece only exists while playing.
-  useFlick(piece, arena, answer, phase === "playing" && question ? question.id : "");
+  useFlick(piece, arena, answer, phase === "playing" && question ? question.id : "", twoDoors ? { map: doorSide } : {});
   useEffect(() => {
     // Keys 1 to 4 already answer through the controller (a capture listener on window, which runs first);
     // the document listener only draws the deal for the question that was on screen.
     if (phase !== "playing") return undefined;
     const onKey = (e) => {
-      if (e.repeat || !/^[1-4]$/.test(e.key)) return;
+      if (e.repeat) return;
       if (e.target instanceof Element && e.target.closest("input,textarea,select")) return;
-      deal(Number(e.key) - 1);
+      const index = twoDoors && e.key === "ArrowLeft" ? 0 : twoDoors && e.key === "ArrowRight" ? 1 : /^[1-4]$/.test(e.key) ? Number(e.key) - 1 : -1;
+      if (question.choices[index]) deal(index);
     };
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
@@ -120,9 +123,9 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     const code = joinCode.trim().toUpperCase();
     if (/^[A-Z]{4}$/.test(code) && onChallenge) onChallenge(code);
   };
-  const settings = html`<label class="form-field">Match<select value=${direction} disabled=${!canChange}
+  const settings = html`<label class="form-field">Match<select value=${direction === "face" && choices === 4 ? "classic" : direction} disabled=${!canChange}
       onChange=${e => changeDirection(e.target.value)}>
-      <option value="face">Face to name</option><option value="name">Name to face</option><option value="mixed">Both directions</option>
+      <option value="face">Face to name · two choices</option><option value="classic">Face to name · four choices</option><option value="name">Name to face</option><option value="mixed">Both directions</option>
     </select></label>
     <div class="form-field"><span>Round</span><div class="seg" role="group" aria-label="Round length">
       ${Object.keys(LENGTHS).map((value) => html`<button key=${value} type="button" class="segbtn" aria-pressed=${String(length === value)} disabled=${!canChange} onClick=${() => changeLength(value)}>${LENGTHS[value]} classmates</button>`)}
@@ -149,7 +152,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
     const right = answers.filter((a, i) => a.choice === round.questions[i].correctChoice).length;
     const strip = answerSummary(round, answers, photoUrls).slice(0, 3);
     const next = [1, 2].map((i) => round.questions[answers.length + i]).filter(Boolean);
-    return html`<section ref=${playRegion} class="sprint-stage sprint-play" tabindex="-1" aria-label="Speed round" data-question-id=${question.id}>
+    return html`<section ref=${playRegion} class=${`sprint-stage sprint-play ${twoDoors ? "sprint-duel" : ""}`} tabindex="-1" aria-label="Speed round" data-question-id=${question.id}>
       <div class="cab">
         <header class="sprint-hud">
           <div class="col"><span class="lbl">Right</span><span class="val">${pad2(right)}</span></div>
@@ -161,11 +164,11 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
         <div class="arena" ref=${arena} data-dir=${question.direction}>
           <div class="fx" ref=${fx} aria-hidden="true"></div>
           <div class="choices" role="group" aria-label="Answer choices">
-            ${question.choices.map((choice, i) => html`<button key=${choice.id} class="answer zone" data-k=${i} data-state="idle" data-sprint-answer="true"
-              aria-label=${choice.image ? `Photo ${i + 1}` : choice.label} onClick=${() => answer(i)}>${zoneMarkup(choice, i, photoUrls)}</button>`)}
+            ${question.choices.map((choice, i) => html`<button key=${choice.id} class=${`answer zone ${twoDoors ? "door" : ""}`} data-k=${i} data-state="idle" data-sprint-answer="true"
+              aria-label=${choice.image ? `Photo ${i + 1}` : choice.label} onClick=${() => answer(i)}>${twoDoors ? doorMarkup(choice, i) : zoneMarkup(choice, i, photoUrls)}</button>`)}
           </div>
-          <div class="deck" aria-hidden="true">${next.map((q, i) => html`<div key=${q.id} class="layer silhouette l${i + 1}">${pieceMarkup(q, photoUrls, true)}</div>`)}</div>
-          <div key=${question.id} class="piece is-enter" ref=${piece}>${pieceMarkup(question, photoUrls, false)}</div>
+          ${!twoDoors && html`<div class="deck" aria-hidden="true">${next.map((q, i) => html`<div key=${q.id} class="layer silhouette l${i + 1}">${pieceMarkup(q, photoUrls, true)}</div>`)}</div>`}
+          <div key=${question.id} class="piece is-enter" ref=${piece}>${twoDoors ? doorPieceMarkup(question, photoUrls) : pieceMarkup(question, photoUrls, false)}</div>
           ${peek && html`<button type="button" class="peek ${peek.ok ? "ok" : "no"}" onClick=${() => setPeek(null)} aria-label=${`${peek.name}. Tap to close.`}>
             <span class="pthumb">${peek.thumb && html`<img src=${peek.thumb} alt="" />`}</span>
             <span class="ptext"><span class="pname">${peek.name}</span>
@@ -206,7 +209,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
           ${missed.length > 0 && html`<h2 class="no">Missed (${missed.length})</h2><div class="pairs">${missed.map(pair)}</div>`}
           ${got.length > 0 && html`<h2>Got right (${got.length})</h2><div class="pairs">${got.map(pair)}</div>`}
         </section>`}
-        <${SprintRecords} records=${records} />
+        <${SprintRecords} records=${records} choices=${round?.choices ?? choices} />
       </div>
     </section>`;
   }
@@ -244,15 +247,16 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
           <button class="btn btn-secondary" disabled=${joinCode.trim().length !== 4}>Join</button></div>
       </form>
       <p><button class="linkbtn" onClick=${onExit}>Back to games</button> <button type="button" class="linkbtn small" aria-pressed=${String(sound)} onClick=${() => { setSound(!sound); setSoundOn(!sound); }}>${sound ? "Sound is on" : "Sound is off"}</button></p>
-      <${SprintRecords} records=${records} />
+      <${SprintRecords} records=${records} choices=${round?.choices ?? choices} />
     </div>
   </section>`;
 }
 
-function SprintRecords({ records }) {
+function SprintRecords({ records, choices }) {
   if (!records) return null;
   return html`<aside class="sprint-records">
     <h2>Your speed records</h2>
+    <p class="small">${choices === 2 ? "Two-choice rounds" : "Four-choice rounds"}</p>
     <p>Best score: <strong>${records.bestScore ? records.bestScore.score.toLocaleString() : "No completed round yet"}</strong><br />
       Fastest 100%: <strong>${records.fastestPerfect ? seconds(records.fastestPerfect.elapsedMs) : "Your first perfect run sets the time"}</strong></p>
     ${(records.leaders?.length > 0 || records.perfectLeaders?.length > 0) && html`<details>

@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { scoreSprint } from "../../public/kits/recognition/sprint.js";
-import { sprintOptions } from "../../server/gsb/sprint.js";
+import { sprintOptions, sprintChoices } from "../../server/gsb/sprint.js";
 
 const questions = Array.from({ length: 20 }, (_, i) => ({ id: `q${i}`, correctChoice: String(i % 4) }));
 const answers = questions.map((q) => ({ questionId: q.id, choice: q.correctChoice }));
@@ -29,4 +29,12 @@ test("the result is based on ordered choices and bounded whole-run time", () => 
     assert.throws(() => scoreSprint(questions, invalid, 1000), /not valid/);
   for (const ms of [0, -1, 1.5, Infinity, 3600001])
     assert.throws(() => scoreSprint(questions, answers, ms), /not valid/);
+});
+
+
+test("two-door difficulty is explicit, face-only, and leaves old API callers at four choices", () => {
+  assert.equal(sprintChoices("face"), 4);
+  assert.equal(sprintChoices("face", 2), 2);
+  for (const value of [0, 1, 3, 5, "2", null, {}]) assert.throws(() => sprintChoices("face", value));
+  for (const direction of ["name", "mixed"]) assert.throws(() => sprintChoices(direction, 2));
 });
