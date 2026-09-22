@@ -102,6 +102,9 @@ Production acceptance: source `276acb3` deployed READY as `dpl_8UnHD7FeMum8qJo2h
 - [x] Verify 450 synthetic classmates with one resend each; block the 901st send. Verify real database concurrency, expiry, guest resume/save and the eleventh quick duel in an isolated schema.
 - [x] Inspect the hosting firewall: no custom active/draft rules, no attack mode and no recorded mitigations in the inspected period.
 - [x] Fix a rapid guest keyboard transition: bind the answer handler during DOM commit so the next visible question accepts input immediately. Cover the exact DOM-commit moment in the browser regression.
-- [ ] Complete browser regressions and same-URL production verification.
+- [x] Complete browser regressions, phone/desktop visual review, unit/type/build/privacy checks and CI.
+- [ ] Verify the deployed release at the same production URL.
 
 This change adds no dependency, migration, paid service, roster import or account cleanup. Existing database counters retain their counts; limits take effect with the new deployment. See [OPERATIONS.md](OPERATIONS.md) for exact values and the distinction between rate-limit tests and a real simultaneous-user load test.
+
+Validation: 519 unit tests and four new isolated HTTP/Postgres launch tests pass. Twenty-eight distinct Chromium/WebKit scenarios cover Guest, first-login/nicknames, cross-browser room/duel invitations, two-choice solo, live duels and rematches. The first guest run and focused repeat exposed a dropped key immediately after a question transition. After binding during DOM commit, all eight focused guest/input checks pass, including a deterministic regression at that transition. Measured guest answer transitions were at most 6 ms locally. Phone/desktop result screenshots were inspected. Type checks, both builds, source/history/local-secret scans and GitHub CI pass. Exact read-only comparisons retain the original four accounts, three tester session grants and two settings. No real login emails or 450-browser production load test were run.

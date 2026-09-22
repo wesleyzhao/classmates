@@ -54,6 +54,8 @@ A choice ID is a string `0` through `3`. Pass the ID of the question that was ac
 
 No loading, animation or network request may lock the next answer. Prepare every photo before starting. The timer starts after the server start acknowledgment and first question render, stops on the final input, and counts background time. Display results immediately while saving. Do not write an optimistic result to Elo or build another score formula in the view.
 
+For Guest, bind the question-specific keyboard handler in `useLayoutEffect`, not a passive effect. A key may arrive as soon as the next face is committed to the DOM; a stale handler rejects it as an answer to the previous question. The rapid-input browser test dispatches a key at that exact transition. Signed-in Speed already reads the current question from its controller ref.
+
 Keep a stable prompt area for short and long names, fixed answer targets, `object-fit: contain` for portraits, and at least 44px touch areas. The current view scrolls the play region into view once at the start and moves focus to the result heading at completion. Do not move focus or scroll between questions. Do not put a person's answer/name in a portrait's alt text before answering.
 
 ## Required recovery states
