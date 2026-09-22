@@ -224,6 +224,7 @@ test("a background countdown waits for visibility and held answer keys do not re
 test("two doors accept left and right drops and arrow keys, ignoring unavailable choices", async ({ page, browserName }) => {
   const round = await openRound(page), errors = [];
   page.on("pageerror", e => errors.push(e.message));
+  await page.screenshot({path:`output/gsb-screenshots/${browserName}/guest-two-doors-phone.png`,fullPage:true});
   await page.keyboard.press("3"); await page.keyboard.press("4");
   await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
   for (let i=0;i<2;i++) {
