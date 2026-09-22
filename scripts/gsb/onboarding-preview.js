@@ -3,7 +3,11 @@ import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-/** Only loopback requests from our own page can inspect the preview inbox or reset its browser. */
+/** Only loopback requests from our own page can inspect the preview inbox or reset its browser.
+ * @param {{headers: Record<string, string>, socket: {remoteAddress: string}}} req
+ * @param {string} origin
+ * @returns {boolean}
+ */
 export function previewRequestAllowed(req, origin) {
   const target = new URL(origin);
   return req.headers.host === target.host &&
@@ -12,7 +16,10 @@ export function previewRequestAllowed(req, origin) {
     !["cross-site", "same-site"].includes(req.headers["sec-fetch-site"]);
 }
 
-/** A repeatable preview on its own port and test schema. No real email is sent or account changed. */
+/** A repeatable preview on its own port and test schema. No real email is sent or account changed.
+ * @param {number} [port]
+ * @returns {Promise<{port: number, close: () => Promise<void>}>}
+ */
 export async function startOnboardingPreview(port = 3140) {
   if (process.env.VERCEL) throw new Error("The onboarding preview cannot run on Vercel.");
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid preview port.");
