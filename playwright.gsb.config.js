@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/gsb",
   testMatch: "**/*.browser.spec.js",
-  testIgnore: "guest.browser.spec.js",
+  testIgnore: ["guest.browser.spec.js", "onboarding.browser.spec.js"],
   timeout: 120000,
   expect: { timeout: 15000 },
   workers: 1,

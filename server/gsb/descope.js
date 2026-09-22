@@ -1,5 +1,6 @@
 // Managed email proof uses Descope's HTTPS API; app sessions and game accounts remain provider-independent.
 import { PlatformError } from "../../public/shared/errors.js";
+import { invitePath } from "../../public/gsb/invite-path.js";
 /** Call only the fixed provider origin; never accept an endpoint or identity from a browser. */
 async function call(path, body, fetcher = fetch) {
   if (!process.env.DESCOPE_PROJECT_ID)
@@ -50,12 +51,14 @@ async function call(path, body, fetcher = fetch) {
 /** Send to the entered address, preserving the app's independent origin-bound challenge. */
 export async function sendDescopeLink(email, url, fetcher = fetch) {
   const target = new URL(url);
-  const state = new URLSearchParams(target.hash.slice(1)).get("token");
+  const fragment = new URLSearchParams(target.hash.slice(1));
+  const state = fragment.get("token"), back = invitePath(fragment.get("returnTo"));
   target.hash = "";
   target.search = new URLSearchParams({
     provider: "descope",
     state,
   }).toString();
+  if (back) target.searchParams.set("returnTo", back);
   await call(
     "signup-in/email",
     { loginId: email, redirectUrl: target.href },

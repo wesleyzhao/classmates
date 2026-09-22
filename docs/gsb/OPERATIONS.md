@@ -91,7 +91,7 @@ The additive migration creates `gsb_guest_runs` even while disabled. See [GUEST-
 
 For testing with someone who has no Stanford email, an operator can hold a door open. It is a row in `gsb_settings` read at request time, so it changes without a deploy:
 
-- `npm run gsb:door -- open` prints a link of the form `https://gsb-classmates.vercel.app/door/CODE` (pass `--origin=http://localhost:3137` for a local preview). Anyone who opens it gets a week-long session and a fresh account with no email, labelled in the masthead, and goes through the nickname step like everyone else.
+- `npm run gsb:door -- open` prints a link of the form `https://gsb-classmates.vercel.app/door/CODE` (pass `--origin=http://localhost:3137` for a local preview). Anyone who opens it gets a week-long session and a fresh account with no email, and goes through the nickname step. The explanatory tester banner is omitted. This link tests signed-in access, not the public guest countdown; see [ONBOARDING.md](ONBOARDING.md) for repeatable first-visit testing.
 - `npm run gsb:door -- close` shuts it and ends every door session at once. `close --purge` also deletes the door accounts and everything they scored (sprint runs, challenges they hosted, progress, ratings and pair records), so class standings are clean again. `status` shows the state and who came in.
 - The route is `POST /api/auth/door {code}`, rate limited per address; a closed door or a wrong code is a 404. A door account is never marked email-verified, and nothing public can open the door.
 

@@ -38,7 +38,7 @@ const MIME = {
 /**
  * Start the server. Port 0 asks the operating system for a free one, which is how the
  * tests and Playwright run several servers at once without agreeing on numbers.
- * @param {{ port?: number, quiet?: boolean, handler?: (req:any,res:any)=>Promise<void> }} [options]
+ * @param {{ port?: number, host?: string, quiet?: boolean, handler?: (req:any,res:any)=>Promise<void> }} [options]
  * @returns {Promise<{ port: number, close: () => Promise<void> }>}
  */
 export function startDevServer(options = {}) {
@@ -61,7 +61,7 @@ export function startDevServer(options = {}) {
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(options.port ?? 0, () => {
+    server.listen(options.port ?? 0, options.host, () => {
       const address = server.address();
       const port = typeof address === 'object' && address ? address.port : 0;
       resolve({

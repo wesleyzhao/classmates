@@ -4,6 +4,7 @@ import { appendFile } from "node:fs/promises";
 import { PlatformError } from "../../public/shared/errors.js";
 import { sendDescopeLink, verifyDescopeLink } from "./descope.js";
 import { emailDomains } from './site-config.js';
+import { invitePath } from '../../public/gsb/invite-path.js';
 const token = () => randomBytes(32).toString("base64url");
 /** Hash bearer secrets before persistence. */
 export const hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -37,9 +38,9 @@ export function appOrigin() {
       "Login email is not configured yet.",
     );
   const url = new URL(origin);
-  const local = !process.env.VERCEL && url.protocol === 'http:' && url.hostname === 'localhost';
+  const local = !process.env.VERCEL && url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname);
   if (url.username || url.password || url.pathname !== '/' || url.search || url.hash || url.protocol !== 'https:' && !local)
-    throw new Error("APP_ORIGIN must be an HTTPS origin (HTTP localhost is allowed locally).");
+    throw new Error("APP_ORIGIN must be an HTTPS origin (HTTP loopback is allowed locally).");
   return url.origin;
 }
 /** Modular delivery adapter. The local test outbox can never run on Vercel. */
@@ -97,13 +98,16 @@ export async function deliverLink(email, url) {
     );
 }
 /** Store an origin-bound one-use link for server delivery or an explicit operator grant. Never expose it through an API response. */
-export async function issueLink(db, value, purpose = "email") {
+export async function issueLink(db, value, purpose = "email", returnTo = null) {
   if (!["email", "descope", "owner-preview"].includes(purpose))
     throw new Error("Unknown sign-in purpose.");
   const email = stanfordEmail(value),
     secret = token();
   const origin = appOrigin();
-  const url = `${origin}/login#token=${secret}`;
+  const fragment = new URLSearchParams({ token: secret });
+  const back = invitePath(returnTo);
+  if (back) fragment.set("returnTo", back);
+  const url = `${origin}/login#${fragment}`;
   await db.query(
     "insert into gsb_links(hash,email,expires_at,origin,purpose) values($1,$2,now()+interval '15 minutes',$3,$4)",
     [hash(secret), email, origin, purpose],
@@ -111,7 +115,7 @@ export async function issueLink(db, value, purpose = "email") {
   return { email, url, hash: hash(secret) };
 }
 /** Send a one-use email link. Only the server-selected delivery adapter sees the credential. */
-export async function requestLink(db, value, send = deliverLink) {
+export async function requestLink(db, value, send = deliverLink, returnTo = null) {
   const localOutbox =
     !process.env.VERCEL &&
     process.env.NODE_ENV === "test" &&
@@ -120,7 +124,7 @@ export async function requestLink(db, value, send = deliverLink) {
     send === deliverLink && process.env.DESCOPE_PROJECT_ID && !localOutbox
       ? "descope"
       : "email";
-  const link = await issueLink(db, value, purpose);
+  const link = await issueLink(db, value, purpose, returnTo);
   try {
     await send(link.email, link.url);
   } catch (error) {

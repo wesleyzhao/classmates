@@ -93,7 +93,7 @@ export function createGsbHandler(deps = {}) {
         await limit(`email-ip:${ip}`, 10, 900000);
         await limit(`email:${hash(email)}`, 3, 900000);
         await limit("email-day", 90, 86400000);
-        await requestLink(db, email, deps.send ?? deliverLink);
+        await requestLink(db, email, deps.send ?? deliverLink, body.returnTo);
         return sendJson(res, 200, { sent: true });
       }
       if (p[0] === "auth" && p[1] === "door" && method === "POST") {

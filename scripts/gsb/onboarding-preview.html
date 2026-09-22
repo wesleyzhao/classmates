@@ -1,0 +1,57 @@
+<!-- Local preview tools. Served only by the isolated, loopback-bound rehearsal server. -->
+<!doctype html>
+<html lang="en" data-theme="arcade"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classmates first-visit preview</title>
+<link rel="stylesheet" href="/themes/base.css"><link rel="stylesheet" href="/themes/editorial.css"><link rel="stylesheet" href="/gsb/style.css">
+</head><body><main class="shell narrow">
+  <h1>Try a first visit</h1>
+  <p>This local preview uses fictional classmates and a test inbox. Your real account, scores and tester access stay as they are.</p>
+  <ol><li>Start a fresh visitor below. The game opens in a new tab at 3-2-1.</li>
+    <li>Play ten faces. Enter the suggested email to save your score.</li>
+    <li>Return here and refresh the inbox. Open the captured link, then choose a nickname.</li></ol>
+  <button id="reset" class="btn btn-primary">Start a fresh visitor</button>
+  <p id="identity" role="status"></p>
+  <a href="/" target="classmates-preview" rel="noopener">Open the game</a>
+  <h2>Test inbox</h2>
+  <p class="muted">Links here exercise the real app authentication flow with local delivery. This is a functional preview of the message, not Descope's hosted email design. Nothing is sent to an actual inbox.</p>
+  <button id="refresh" class="btn">Refresh inbox</button>
+  <p id="status" role="status"></p><div id="messages"></div>
+</main><script type="module">
+const identity = document.querySelector('#identity'), status = document.querySelector('#status');
+function showIdentity() {
+  const email = sessionStorage.getItem('preview-email');
+  identity.textContent = email ? 'Use this new account: ' + email : '';
+}
+async function refresh() {
+  const response = await fetch('/api/preview/inbox');
+  if (!response.ok) throw new Error('The local inbox could not load.');
+  const data = await response.json();
+  const fragment = document.createDocumentFragment();
+  for (const message of data.messages) {
+    const card = document.createElement('article'); card.className = 'gsb-card';
+    const recipient = document.createElement('p'); recipient.textContent = 'To: ' + message.email;
+    const title = document.createElement('h3'); title.textContent = 'Your Classmates sign-in link';
+    const link = document.createElement('a'); link.textContent = 'Sign in to Classmates'; link.href = message.url;
+    link.target = '_blank'; link.rel = 'noopener';
+    const note = document.createElement('p'); note.textContent = 'This link expires in 15 minutes and works once. If you did not request it, you can ignore this email.';
+    card.append(recipient, title, link, note); fragment.append(card);
+  }
+  document.querySelector('#messages').replaceChildren(fragment);
+  status.textContent = data.messages.length ? '' : 'No messages yet.';
+}
+document.querySelector('#reset').addEventListener('click', async () => {
+  const game = window.open('about:blank', 'classmates-preview');
+  if (game) game.opener = null;
+  try {
+    const response = await fetch('/api/preview/reset', { method: 'POST' });
+    if (!response.ok) throw new Error('The preview could not restart.');
+    const { email } = await response.json();
+    localStorage.clear(); sessionStorage.clear(); sessionStorage.setItem('preview-email', email);
+    showIdentity(); await refresh();
+    // An explicit link remains available if this browser blocks new tabs.
+    if (game) game.location.href = '/';
+  } catch (error) { if (game) game.close(); status.textContent = error.message; }
+});
+document.querySelector('#refresh').addEventListener('click', () => refresh().catch(error => { status.textContent = error.message; }));
+showIdentity(); refresh().catch(error => { status.textContent = error.message; });
+</script></body></html>

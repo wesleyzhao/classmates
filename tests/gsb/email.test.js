@@ -7,6 +7,7 @@ import {
 } from "../../server/gsb/descope.js";
 import { loginLink } from "../../public/gsb/login-link.js";
 import { requestLink, consumeLink, hash } from "../../server/gsb/auth.js";
+import { invitePath } from "../../public/gsb/invite-path.js";
 process.env.DESCOPE_PROJECT_ID = "test-project";
 process.env.APP_ORIGIN = "https://classmates.example";
 test("provider sends to the entered recipient with the configured app challenge", async () => {
@@ -125,4 +126,25 @@ test("failed delivery removes its pending app challenge", async () => {
   );
   assert.equal(sql.length, 2);
   assert.ok(sql[1].startsWith("delete from gsb_links"));
+});
+test("email invitations survive both delivery adapters and refuse external destinations", async () => {
+  for (const path of ["/speed/abcd", "/r/efgh"]) {
+    let link;
+    await requestLink({ query: async () => [] }, "person@stanford.edu", async (email, url) => { link = url; }, path);
+    const credential = loginLink(link);
+    assert.equal(credential.returnTo, invitePath(path));
+    await sendDescopeLink("person@stanford.edu", link, async (url, init) => {
+      const redirect = new URL(JSON.parse(init.body).redirectUrl);
+      redirect.searchParams.set("t", "provider-proof");
+      assert.deepEqual(loginLink(redirect.href), { ...credential, proof: "provider-proof" });
+      return new Response("{}", { status: 200 });
+    });
+  }
+  for (const path of ["https://evil.example", "//evil.example/r/ABCD", "/r/ABCD?next=evil", "/r/ABC", "/door/ABCDEF", "/r/ABCD/../profile", { path: "/r/ABCD" }]) {
+    assert.equal(invitePath(path), null);
+    assert.equal(loginLink(`https://classmates.example/login#token=x&returnTo=${encodeURIComponent(String(path))}`).returnTo, undefined);
+    await requestLink({ query: async () => [] }, "person@stanford.edu", async (email, url) => {
+      assert.equal(new URLSearchParams(new URL(url).hash.slice(1)).has("returnTo"), false);
+    }, path);
+  }
 });

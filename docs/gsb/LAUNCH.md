@@ -62,3 +62,13 @@ The initial live flow was automatic but still showed loading screens before coun
 The initial session check is visually quiet on `/` and `/guest`, so it does not flash a title/loading page before eligibility is known. Once guest mode is confirmed, the first visible screen is the countdown. Login and invitation URLs retain their own flows.
 
 Follow-up verification: all 506 unit tests and the 14 guest browser checks passed, along with type, build, copy and privacy checks. Fourteen focused Chromium/WebKit regression scenarios cover nickname/login recovery, disabled guest mode, private-content access, Practice, ten-person Speed, invitations and duels. The disabled-mode check initially caught speculative guest-code loading before the session response; restricting that fetch to confirmed guests fixed it, and both engines passed the recheck. Countdown screenshots were inspected at phone and desktop widths. No database, environment setting, account or tester grant was changed.
+
+## First-login and invitation follow-up
+
+- [x] Confirm that a fresh signed-out root visit starts the ten-face countdown; distinguish the intentional `/door/CODE` tester signup.
+- [x] Remove tester-door banner and first-login introduction; place the requested short nickname helper below the input. Keep face history on the normal account page.
+- [x] Preserve duel and room invitations through email confirmation in another browser. Show the invite context and omit the guest detour.
+- [x] Add a loopback-only first-visit rehearsal with fictional people and a captured inbox. Preserve both production identity and existing localhost cookies.
+- [x] Verify 509 unit tests, types, copy, privacy and both builds. Thirty relevant browser scenarios pass across Chromium and WebKit: fourteen guest cases, ten existing login/profile/duel regressions, and six new preview/invitation stories. Review phone and desktop nickname screenshots.
+
+Two initial browser assertions needed correction: textContent omitted the visual line break, and a named email-link target could reuse an existing tab in Chromium. The copy assertion now checks rendered text and preview email links explicitly open a new tab. Both reruns pass. See [ONBOARDING.md](ONBOARDING.md) for the preview command, privacy boundaries and future design contract. Production needs no migration, environment change or tester-account cleanup.

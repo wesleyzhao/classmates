@@ -23,6 +23,7 @@
     "deploy": "vercel --prod",
     "build": "node scripts/build.js",
     "dev:gsb": "APP_PROFILE=gsb node --env-file=.env.local server/dev.js",
+    "preview:onboarding": "node --env-file=.env.local scripts/gsb/onboarding-preview.js",
     "gsb:migrate": "node --env-file=.env.local scripts/gsb/migrate.js",
     "gsb:door": "node --env-file=.env.local scripts/gsb/door.js",
     "gsb:import": "node --env-file=.env.local scripts/gsb/import.js",

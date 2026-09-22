@@ -59,13 +59,16 @@ async function practiceCard(page, deck) {
 }
 test("email defaults and discoverable nickname edits persist across rooms and reloads", async ({ page, browserName }) => {
   const email = await login(page, null);
-  await expect(page.getByText("We started with your email username.", { exact: false })).toBeVisible();
+  await expect(page.locator("#nickname-help")).toHaveText("2 to 48 characters. Your nickname appears in games, chat, and scores. And you can change it anytime. Your email stays private.", { useInnerText: true });
+  await expect(page.getByRole("heading", { name: "What should we call you?" })).toHaveCount(0);
+  await expect(page.getByText("Your face history", { exact: true })).toHaveCount(0);
   await expect(page.getByLabel("Your name", { exact: true })).toHaveCount(0);
   await mkdir(`output/gsb-screenshots/${browserName}`, { recursive: true });
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/nickname-first-login.png`, fullPage: true });
   await page.getByRole("button", { name: "Save nickname" }).click();
   const initial = email.split("@")[0];
   await page.getByRole("button", { name: `Edit nickname for ${initial}`, exact: true }).click();
+  await expect(page.getByText("Your face history", { exact: true })).toBeVisible();
   const name = "alexandra-finlay-jones";
   const input = page.getByLabel("Nickname", { exact: true });
   await input.fill("x".repeat(49));

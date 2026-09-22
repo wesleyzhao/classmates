@@ -488,7 +488,7 @@ test("an invite link opened while signed out still ends at the challenge after s
   await guest.context().setExtraHTTPHeaders({ "x-forwarded-for": `2001:db8::${randomUUID().slice(0, 8)}` });
   const email = `invite-${randomUUID()}@stanford.edu`;
   await guest.goto(`/speed/${challenge.code}`);
-  await expect(guest.locator(".notice", { hasText: "Sign in to play speed challenge" })).toContainText(challenge.code);
+  await expect(guest.locator(".notice", { hasText: "Sign in to join speed challenge" })).toContainText(challenge.code);
   await guest.getByLabel("Your Stanford email").fill(email);
   await guest.getByRole("button", { name: "Email me a sign-in link" }).click();
   await expect(guest.getByRole("heading", { name: "Check your inbox." })).toBeVisible();

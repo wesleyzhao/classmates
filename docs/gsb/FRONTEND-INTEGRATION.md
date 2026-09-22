@@ -22,6 +22,8 @@ The canonical source is now [wesleyzhao/classmates](https://github.com/wesleyzha
 
 `/profile` edits the current nickname without changing identity; `/scores` renders the server's rating and badge decisions. Keep room sharing, chat, rejoin, sign-out, used-link recovery and browser-back navigation reachable. Home must retain the speed entry in addition to practice and both multiplayer modes.
 
+See [ONBOARDING.md](ONBOARDING.md) for the local first-visit rehearsal and test inbox. First nickname setup has only the input, short helper text and Save; face history stays on the regular account page. Signed-out invitation screens keep the game destination through email, including across browsers, and omit the guest-trial button. Keep these distinctions when restyling login and account screens.
+
 ## What to restyle
 
 - `public/gsb/style.css`: shell and existing screens. Use theme tokens from `public/themes/`; keep selectors scoped to avoid breaking Parlor.

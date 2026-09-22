@@ -26,6 +26,7 @@ import { keepMissing, pickDirection, studyOrder } from "./learning.js";
 const RETRY_AFTER = 5;
 import { createPracticeReviews, mergePracticeProgress } from "./practice-reviews.js";
 import { loginLink } from "./login-link.js";
+import { invitePath } from "./invite-path.js";
 import { defaultNickname, nicknameError, NICKNAME_MAX } from "./profile.js";
 import { GAME_NAME } from "./brand.js";
 import { GuestCountdown } from "./guest-countdown.js";
@@ -36,6 +37,7 @@ function readEmailCredential() {
   if (credential && location.search) {
     const fragment = new URLSearchParams({ token: credential.token });
     if (credential.proof) fragment.set("proof", credential.proof);
+    if (credential.returnTo) fragment.set("returnTo", credential.returnTo);
     history.replaceState(null, "", `${location.pathname}#${fragment}`);
   }
   return credential;
@@ -62,16 +64,20 @@ const doorCode = (path) => path.match(/^\/door\/([a-z0-9]{6})$/i)?.[1]?.toUpperC
 // An invite link opened while signed out is kept for an hour, so the sign-in link (which lands on /login)
 // and the nickname step still end at the challenge or room the person was invited to.
 const RETURN_KEY = "gsb-return";
-function keepReturnPath() {
-  if (!speedCode(location.pathname) && !roomCode(location.pathname)) return;
-  try { localStorage.setItem(RETURN_KEY, JSON.stringify({ path: location.pathname, at: Date.now() })); } catch {}
+let pendingInvite = emailCredential?.returnTo ?? invitePath(location.pathname);
+function keepReturnPath(path = pendingInvite) {
+  if (!invitePath(path)) return;
+  pendingInvite = path;
+  try { localStorage.setItem(RETURN_KEY, JSON.stringify({ path, at: Date.now() })); } catch {}
 }
 function takeReturnPath() {
+  const inMemory = pendingInvite;
+  pendingInvite = null;
   try {
     const kept = JSON.parse(localStorage.getItem(RETURN_KEY) || "null");
     localStorage.removeItem(RETURN_KEY);
-    return kept && Date.now() - kept.at < 3600000 ? String(kept.path) : null;
-  } catch { return null; }
+    return inMemory || (kept && Date.now() - kept.at < 3600000 ? invitePath(kept.path) : null);
+  } catch { return inMemory; }
 }
 keepReturnPath();
 
@@ -166,6 +172,7 @@ function App() {
     // Show confirmation without requiring a reload or consuming the link here.
     const receive = () => {
       const credential = readEmailCredential();
+      if (credential?.returnTo) keepReturnPath(credential.returnTo);
       setLoginToken(credential);
       if (credential) { setError(""); setGuestOpen(false); }
     };
@@ -219,7 +226,7 @@ function App() {
       history.pushState(null, "", `/r/${s.room.code}`);
   };
   useEffect(() => {
-    if (!session?.nickname) return;
+    if (!session?.nickname || loginToken) return;
     if (initialCode.current) {
       const code = initialCode.current;
       initialCode.current = null;
@@ -232,7 +239,7 @@ function App() {
     const speed = speedCode(back), code = roomCode(back);
     if (speed) openChallenge(speed);
     else if (code) run(async () => enter(await api(`rooms/${code}/join`, {})));
-  }, [session?.nickname]);
+  }, [session?.id, session?.nickname, loginToken]);
   const navigate = (next) => {
     setError("");
     setChallenge(null);
@@ -316,9 +323,6 @@ function App() {
     html`<p class="notice small">
       Private owner preview with the real class deck. This session lasts 24
       hours.
-    </p>`}${session?.access === "door" &&
-    html`<p class="notice small">
-      You came in through the test door, without an email. This access ends when the door closes.
     </p>`}${error &&
     html`<div role="alert" class="notice error">
       ${error}<button class="linkbtn" onClick=${() => setError("")}>
@@ -339,7 +343,7 @@ function App() {
             site=${site}
             token=${loginToken}
             emailReady=${emailReady}
-            invite=${challenge}
+            invite=${loginToken?.returnTo ?? pendingInvite}
             run=${run}
             guestAvailable=${guestAvailable}
             onGuest=${() => { setGuestOpen(true); history.pushState(null, "", "/guest"); }}
@@ -412,7 +416,7 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
     [sent, setSent] = useState(false),
     [formError, setFormError] = useState(""),
     [busy, setBusy] = useState(false);
-  const showGuest = guestAvailable && !token && !sent;
+  const showGuest = guestAvailable && !token && !sent && !invite;
   const submit = async (e) => {
     e?.preventDefault();
     setBusy(true); setFormError("");
@@ -421,7 +425,7 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
         const data = await api("auth/verify", token);
         onLogin(data.account);
       } else {
-        await api("auth/request", { email });
+        await api("auth/request", { email, returnTo: invite });
         setSent(true);
       }
     } catch (e) { setFormError(e.message); }
@@ -433,7 +437,7 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
     <p class="muted">
       Learn the class at your pace, or see how you do together.
     </p>`}
-    ${invite && html`<p class="notice small" role="status">Sign in to play speed challenge <strong>${invite}</strong>. It opens as soon as you are in.</p>`}
+    ${invite && html`<p class="notice small" role="status">Sign in to join ${roomCode(invite) ? "room" : "speed challenge"} <strong>${roomCode(invite) || speedCode(invite)}</strong>. Your invitation will open after sign-in.</p>`}
     ${showGuest && html`<div class="guest-invite">
       <button class="btn btn-primary" onClick=${onGuest}>Try a 10-face speed round</button>
       <p class="small muted">One quick warm-up. No sign-in needed.</p>
@@ -441,7 +445,7 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
     ${formError && html`<p class="notice error" role="alert">${formError}</p>`}
     ${token
       ? html`<div class="gsb-card">
-          <h2>Welcome back.</h2>
+          <h2>You're almost in.</h2>
           <p>Use your one-time email link to sign in.</p>
           <button class="btn btn-primary" disabled=${busy} onClick=${submit}>
             ${busy ? "Signing in" : "Continue to Classmates"}
@@ -493,11 +497,7 @@ function Profile({ account, run, onSave, logout }) {
   const [name, setName] = useState(account.nickname || (door ? "" : defaultNickname(account.email))),
     [busy, setBusy] = useState(false);
   return html`<section class="narrow">
-    <h1>${account.nickname ? "Your account" : "What should we call you?"}</h1>
-    <p class="muted">
-      Your nickname appears in games, chat, and scores. Your email stays
-      private. You can change your nickname anytime.
-    </p>
+    <h1 class=${account.nickname ? "" : "sr-only"}>${account.nickname ? "Your account" : "Choose a nickname"}</h1>
     <form
       class="gsb-card"
       onSubmit=${async (e) => {
@@ -522,15 +522,15 @@ function Profile({ account, run, onSave, logout }) {
           }}
       /></label>
       <p id="nickname-help" class="small muted">
-        ${!account.nickname && (door ? "The name your classmates know you by. " : "We started with your email username. Make it your own. ")}
-        2 to ${NICKNAME_MAX} characters.
+        2 to ${NICKNAME_MAX} characters.<br />
+        Your nickname appears in games, chat, and scores. And you can change it anytime. Your email stays private.
       </p>
       ${!door && html`<p class="small muted">${account.email}</p>`}
       <button class="btn btn-primary" disabled=${busy}>
         ${busy ? "Saving" : "Save nickname"}
       </button>
     </form>
-    <${LearningSummary} />
+    ${account.nickname && html`<${LearningSummary} />`}
     <button class="linkbtn" onClick=${logout}>Sign out</button>
   </section>`;
 }
