@@ -5,6 +5,7 @@ import { prepareRoundMedia } from "./round-media.js";
 import { pieceMarkup, zoneMarkup } from "./sprint-pieces.js";
 import { useFlick, dealPiece, flashZone, floater, firstName, targetOf } from "./sprint-arcade.js";
 import { sfx } from "./sound.js";
+import { GuestCountdown } from "./guest-countdown.js";
 
 const storageKey = (id) => `gsb-guest-attempt:${id}`;
 function remember(id, state) {
@@ -25,12 +26,13 @@ function restore(round) {
 /** Guest attempts use the same arcade artwork and media owner as Speed, with no per-answer HTTP. */
 export function GuestRound({ onSignIn, signInForm }) {
   const [round, setRound] = useState(null), [attempt, setAttempt] = useState(null),
-    [countdown, setCountdown] = useState(null), [now, setNow] = useState(Date.now()),
+    [countdown, setCountdown] = useState(3), [now, setNow] = useState(Date.now()),
     [error, setError] = useState(""), [saving, setSaving] = useState(false),
     [result, setResult] = useState(null), [expired, setExpired] = useState(false),
     [loadVersion, setLoadVersion] = useState(0);
   const current = useRef(null), media = useRef(null), mounted = useRef(true), finishing = useRef(false),
-    arena = useRef(null), fx = useRef(null), piece = useRef(null), region = useRef(null);
+    arena = useRef(null), fx = useRef(null), piece = useRef(null), region = useRef(null),
+    countdownDeadline = useRef(Date.now() + 3000);
   current.current = { round, attempt, result, countdown };
   useEffect(() => {
     mounted.current = true;
@@ -40,6 +42,8 @@ export function GuestRound({ onSignIn, signInForm }) {
     let active = true;
     const controller = new AbortController();
     setError("");
+    countdownDeadline.current = Date.now() + 3000;
+    setCountdown(3);
     api("guest/start", {}, { signal: controller.signal }).then(async (data) => {
       if (!active) return;
       if (data.status === "expired") { setExpired(true); return; }
@@ -48,28 +52,29 @@ export function GuestRound({ onSignIn, signInForm }) {
       if (!active) return;
       const saved = restore(data);
       setRound(data); setAttempt(saved); setNow(Date.now());
-      if (!saved) setCountdown(3);
+      if (saved) setCountdown(null);
     }).catch((e) => { if (active) { setError(e.message); if (e.status === 410) setExpired(true); } });
     return () => { active = false; controller.abort(); media.current?.dispose(); media.current = null; };
   }, [loadVersion]);
 
-  // A hidden tab cannot burn the first question before its player sees the countdown.
+  // Count down while photos load. Hold the last beat on a slow connection; never time an unseen face.
   useEffect(() => {
-    if (!round || attempt || result) return;
-    let deadline = Date.now() + 3000;
-    const visible = () => { deadline = Date.now() + 3000; setCountdown(3); };
-    const timer = setInterval(() => {
+    if (attempt || result || expired || error) return;
+    const visible = () => { countdownDeadline.current = Date.now() + 3000; setCountdown(3); };
+    const tick = () => {
       if (document.hidden) return;
-      const remaining = Math.ceil((deadline - Date.now()) / 1000);
-      if (remaining > 0) { setCountdown(remaining); return; }
+      const remaining = Math.ceil((countdownDeadline.current - Date.now()) / 1000);
+      if (remaining > 0 || !round) { setCountdown(Math.max(1, remaining)); return; }
       clearInterval(timer);
       const next = { answers: [], startedAt: Date.now() };
       current.current = { ...current.current, attempt: next, countdown: null };
       remember(round.id, next); setAttempt(next); setCountdown(null); setNow(Date.now());
-    }, 50);
+    };
+    const timer = setInterval(tick, 50);
+    tick();
     document.addEventListener("visibilitychange", visible);
     return () => { clearInterval(timer); document.removeEventListener("visibilitychange", visible); };
-  }, [round, !!attempt, !!result]);
+  }, [round, !!attempt, !!result, expired, !!error, loadVersion]);
 
   const finish = async () => {
     const c = current.current;
@@ -141,18 +146,12 @@ export function GuestRound({ onSignIn, signInForm }) {
     ${signInForm || html`<button class="btn btn-primary" onClick=${onSignIn}>Sign in to save my score</button>`}
     <p class="small">Your guest score is a personal record. Multiplayer ratings are separate.</p>
   </div></section>`;
-  if (!round) return html`<section class="sprint-stage guest-loading"><div class="cab attract">
-    <h1 class="title">Meet ten classmates.</h1>
-    ${error ? html`<p class="notice error" role="alert">${error}</p><button class="btn btn-primary" onClick=${() => setLoadVersion(n => n + 1)}>Retry loading</button>`
-      : html`<p role="status">Loading your ten faces.</p>`}
+  if (!round && error) return html`<section class="sprint-stage guest-loading"><div class="cab attract">
+    <h1 class="title">Your round could not load.</h1>
+    <p class="notice error" role="alert">${error}</p><button class="btn btn-primary" onClick=${() => setLoadVersion(n => n + 1)}>Retry loading</button>
     <button class="linkbtn" onClick=${onSignIn}>Sign in instead</button>
   </div></section>`;
-  if (countdown !== null) return html`<section class="sprint-stage guest-countdown"><div class="cab attract">
-    <h1 class="title">Match ten faces to their names.</h1>
-    <p>Tap a name or flick the person toward it. Quick, correct answers earn more points.</p>
-    <div class="guest-count" role="status" aria-live="polite" aria-label=${`Starting in ${countdown}`}>${countdown}</div>
-    <button class="linkbtn" onClick=${onSignIn}>Sign in instead</button>
-  </div></section>`;
+  if (countdown !== null || !round) return html`<${GuestCountdown} count=${countdown ?? 3} waiting=${!round && countdown === 1} onSignIn=${onSignIn} />`;
   if (!question) return html`<section class="sprint-stage"><div class="cab attract"><h1 class="title">Round complete.</h1>
     ${error ? html`<p class="notice error" role="alert">${error}</p><button class="btn btn-primary" disabled=${saving} onClick=${finish}>Retry saving round</button>`
       : html`<p role="status">Finishing your round.</p>`}

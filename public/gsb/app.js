@@ -28,6 +28,7 @@ import { createPracticeReviews, mergePracticeProgress } from "./practice-reviews
 import { loginLink } from "./login-link.js";
 import { defaultNickname, nicknameError, NICKNAME_MAX } from "./profile.js";
 import { GAME_NAME } from "./brand.js";
+import { GuestCountdown } from "./guest-countdown.js";
 import { primeOnGesture, isSoundOn, setSound, sfx } from "./sound.js";
 primeOnGesture();
 function readEmailCredential() {
@@ -40,6 +41,11 @@ function readEmailCredential() {
   return credential;
 }
 const emailCredential = readEmailCredential();
+let guestModule;
+const loadGuest = () => guestModule ??= import("./guest-round.js").catch((error) => {
+  guestModule = null;
+  throw error;
+});
 const uid = () => crypto.randomUUID();
 const directionLabel = {
   face: "Face to name",
@@ -141,6 +147,9 @@ function App() {
         if (["/", "/login"].includes(location.pathname) && s.site?.landingMode === "quick") setScreen("speed");
         setDemo(s.demo);
         setGuestAvailable(s.guest?.enabled === true);
+        // Begin fetching code as soon as guest eligibility is known, before the next render.
+        if (!account && s.guest?.enabled && ["/", "/guest"].includes(location.pathname) && !emailCredential)
+          void loadGuest().catch(() => {});
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoaded(true));
@@ -176,7 +185,7 @@ function App() {
   useEffect(() => {
     if (session || !guestAvailable || !guestOpen) return;
     let active = true;
-    import("./guest-round.js").then((module) => {
+    loadGuest().then((module) => {
       if (active) setGuest(() => module.GuestRound);
     }).catch(() => {
       if (active) { setGuestOpen(false); setError("The speed round could not load. Please try again."); }
@@ -322,7 +331,7 @@ function App() {
         ? Guest ? html`<${Guest} signInForm=${html`<${Login} compact=${true} site=${site} emailReady=${emailReady} run=${run} />`} onSignIn=${() => {
             setGuestOpen(false);
             history.pushState(null, "", "/login");
-          }} />` : html`<p role="status" class="loading">Opening your speed round.</p>`
+          }} />` : html`<${GuestCountdown} />`
       : !session || loginToken
         ? html`<${Login}
             site=${site}

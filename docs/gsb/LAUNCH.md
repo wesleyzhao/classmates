@@ -5,7 +5,7 @@ This release keeps the existing Vercel project, production URL, database, portra
 ## Release checklist
 
 - [x] Verify the clean source matches the reviewed release and check Claude for new work.
-- [x] Add a configurable ten-face entry screen and automatic guest countdown after media preload.
+- [x] Add a configurable ten-face entry screen and automatic guest countdown alongside media preload.
 - [x] Keep one guest attempt per browser, resume interrupted attempts and require verified email to save or continue.
 - [x] Preserve invitations, nickname editing, Practice, Speed, duels, quizzes, races and rankings.
 - [x] Run unit, type, API, browser, phone/desktop, privacy and build checks.
@@ -54,3 +54,7 @@ The first Git-connected production release is source `0023e3c`, Vercel deploymen
 - A post-release Vercel error-level log scan returned no entries. Phone screenshots of real content were inspected locally and remain ignored by Git. The public source/history scan found no private data or secrets.
 
 Both browser engines verified email-link/claim behavior against the isolated local outbox. No fresh production email was sent and no physical iPhone tilt test was performed in this release. Existing production email configuration and URL are unchanged.
+
+## Countdown-first entry follow-up
+
+The initial live flow was automatic but still showed loading screens before counting down. A fresh WebKit visit measured the first countdown at 3.7 seconds and the first question at 6.8 seconds. The corrected entry removes the guest introduction/loading screen, loads the small guest module as soon as the session confirms eligibility and begins 3-2-1 as the round and photos prepare. The first question still requires every portrait to be decoded. Slow connections hold the final beat; retry, hidden-tab recovery, completed-trial gating and invitation sign-in remain intact. Signed-in users retain their normal Speed controls and existing sessions.

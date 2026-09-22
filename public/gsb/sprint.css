@@ -258,7 +258,8 @@
 @keyframes duel-pulse { 0% { transform: scale(1.15); } 40% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .sprint-duel .countdown .digit { animation: none; } }
 /* The guest introduction shares Speed's cabinet and controls, including its instant answer path. */
-.guest-countdown .cab { text-align: center; align-items: center; }
+.guest-countdown .cab { text-align: center; align-items: center; min-height: 100svh; justify-content: center; }
+.guest-count-hint { color: var(--arcade-ink-2); }
 .guest-count { font-family: var(--font-arcade); font-size: clamp(72px, 20vw, 120px); color: var(--arcade-gold); line-height: 1.4; }
 .guest-signin { width: 100%; }
 .guest-signin .gsb-card { background: var(--arcade-panel); color: var(--arcade-ink); border: 2px solid var(--arcade-line); }

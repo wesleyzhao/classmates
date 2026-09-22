@@ -163,7 +163,8 @@ test("guest experiment is absent and inaccessible while disabled", async ({ page
   page.on("request", (request) => loaded.push(request.url()));
   await page.goto("/?guest=true");
   await expect(page.getByLabel("Your Stanford email")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Try an 8-face speed round" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Try .*speed round$/ })).toHaveCount(0);
+  await expect(page.locator(".guest-countdown")).toHaveCount(0);
   expect((await (await page.request.get("/api/session")).json()).guest.enabled).toBe(false);
   for (const path of ["/api/guest", "/api/guest/media/fixture-0", "/api/guest/best"])
     expect((await page.request.get(path)).status()).toBe(404);

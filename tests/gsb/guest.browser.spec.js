@@ -89,16 +89,25 @@ test("guest timeout advances and refresh resumes the same bounded round", async 
   expect(resumed.questions.map((q) => q.image)).toEqual(round.questions.map((q) => q.image));
 });
 
-test("preload gates countdown; rapid taps have no network pauses and duplicate events count once", async ({ page, browserName }) => {
+test("countdown overlaps preload; rapid taps have no network pauses and duplicate events count once", async ({ page, browserName }) => {
   let release = () => {};
   const held = new Promise(resolve => { release = () => resolve(undefined); });
   await page.route("**/gsb/fixture.svg?*", async route => { await held; await route.continue(); });
   await page.goto("/");
-  await expect(page.getByText("Loading your ten faces.")).toBeVisible();
-  await expect(page.locator(".guest-countdown")).toHaveCount(0);
-  release();
   await expect(page.getByRole("status", { name: "Starting in 3" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "Starting in 2" })).toBeVisible();
+  await expect(page.getByRole("status", { name: "Starting in 1" })).toBeVisible();
+  await page.waitForTimeout(1100);
+  await expect(page.locator(".guest-round")).toHaveCount(0);
+  await expect(page.locator(".guest-loading")).toHaveCount(0);
+  await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-countdown-phone.png`, fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
+  await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-countdown-desktop.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const readyAt = Date.now();
+  release();
   await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
+  expect(Date.now() - readyAt).toBeLessThan(2000);
   const round = await (await page.request.get("/api/guest")).json();
   const requests = [];
   page.on("request", r => { if (/\/api\/|\/gsb\/fixture/.test(r.url())) requests.push(r.url()); });
@@ -127,6 +136,23 @@ test("preload gates countdown; rapid taps have no network pauses and duplicate e
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-result-phone.png`, fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-result-desktop.png`, fullPage: true });
+});
+
+test("guest entry shows the countdown while the round request is pending, without a start screen", async ({ page }) => {
+  let release = () => {};
+  const held = new Promise(resolve => { release = () => resolve(undefined); });
+  await page.route("**/api/guest/start", async route => { await held; await route.continue(); });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting in 3" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start the clock", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "10 classmates", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Meet ten classmates.", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Loading your ten faces.", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Starting in 2" })).toBeVisible();
+  release();
+  await expect(page.getByRole("status", { name: "Starting in 1" })).toBeVisible();
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
+  await expect(page.getByText("1 / 10", { exact: true })).toBeVisible();
 });
 
 test("failed photo preparation retries the same guest run and releases its blobs on exit", async ({ page }) => {

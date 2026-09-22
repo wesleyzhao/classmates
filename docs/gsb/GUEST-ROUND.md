@@ -16,7 +16,7 @@ Guest scores are personal, unranked results. They never enter competitive Speed 
 
 ## Controller and media
 
-`public/gsb/guest-round.js` owns media through `prepareRoundMedia`, the same bounded loader used by Speed. All ten images are downloaded and validated before an automatic 3-2-1 countdown. Returning to a hidden countdown restarts it, so no question times out unseen. A failed preload has a retry and releases partial object URLs.
+`public/gsb/guest-round.js` owns media through `prepareRoundMedia`, the same bounded loader used by Speed. The first guest screen is a centered 3-2-1 countdown, with no introduction, length selector or start button. Round creation and photo preparation run alongside the countdown. All ten images must be downloaded and decoded before the first question starts; on a slow connection the final beat waits for them without consuming any answer time. Returning from a hidden tab during the countdown restarts it, so no question times out unseen. A failed preload has a retry and releases partial object URLs.
 
 Each question allows eight seconds. A tap, number key (1 through 4), or flick advances immediately. Correct/wrong animation runs independently; no HTTP request or animation timeout separates questions. The displayed question ID is consumed synchronously to reject duplicate events. Held number keys do not repeat. A timeout records a null answer and advances.
 
@@ -36,6 +36,6 @@ All guest routes return 404 while disabled. New trials are limited to five per I
 
 ## Verification
 
-`npx playwright test -c playwright.gsb-guest.config.js` uses fictional people on localhost:3139 in `gsb_test_guest`, with a local email outbox. It covers automatic countdown, complete/timeout/refresh flows, direct email claim, invalid-domain feedback, ten-face signed-in entry, the retained game menu, rapid taps, duplicate events, media failure/retry/cleanup, expired-cookie sign-in and invitation precedence. Chromium and WebKit both run at phone width with desktop screenshots.
+`npx playwright test -c playwright.gsb-guest.config.js` uses fictional people on localhost:3139 in `gsb_test_guest`, with a local email outbox. It covers countdown before the round response, photo loading alongside the countdown, a stalled final beat without lost answer time, complete/timeout/refresh flows, direct email claim, invalid-domain feedback, ten-face signed-in entry, the retained game menu, rapid taps, duplicate events, media failure/retry/cleanup, expired-cookie sign-in and invitation precedence. Chromium and WebKit both run at phone width with desktop screenshots.
 
 The ordinary browser suite on 3138 checks disabled guest behavior and existing modes. Real guest HTTP tests use only `gsb_test_guest_api`; they verify media assignment, races between finishes, ownership, expiry and live exclusions. Local timing measurements are not a physical-device performance guarantee. Never publish test outboxes, traces, screenshots of real people or credentials to GitHub.
