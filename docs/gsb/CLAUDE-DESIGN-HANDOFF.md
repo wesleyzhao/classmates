@@ -1,5 +1,7 @@
 # Claude frontend handoff
 
+Current source: public `wesleyzhao/classmates`, local `/Users/wesley/projects/parlor-public-source`. Start from its `main`. Read [LAUNCH.md](LAUNCH.md) and [FRONTEND-INTEGRATION.md](FRONTEND-INTEGRATION.md) for the ten-face guest entry and current component contracts before using the historical notes below. Bring old checkout design changes across as reviewed file changes, never by merging private Git history.
+
 Start in `/Users/wesley/projects/parlor-gsb` on branch `gsb-classmates`. Read [FRONTEND-INTEGRATION.md](FRONTEND-INTEGRATION.md) first for the mode map, controller contract and verification commands, then PLAN.md, ARCHITECTURE.md, and VALIDATION.md. The user's preference is for Claude to own the final visual design. This implementation supplies working behavior and a conservative editorial layout to design against. The visual direction below describes this baseline; the user's approved ongoing design work takes precedence.
 
 ## Visual direction

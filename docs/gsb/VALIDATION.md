@@ -1,6 +1,10 @@
 # Classmates validation
 
-## Verified so far
+## Current release
+
+The clean public repository and ten-face landing are live. See [LAUNCH.md](LAUNCH.md) for the current source, deployment, completed checklist, production checks and rollback. This release passed 506 unit tests, 66 Classmates browser checks, 12 guest browser checks, 7 original Parlor browser scenarios and 10 focused HTTP/database integration cases, plus type, build and privacy checks. Live Chromium and WebKit guest flows and existing signed-in access were also verified. The guest feature is now enabled with a fixed ten-person sample; older entries below describe earlier releases.
+
+## Earlier verification
 
 - Existing Parlor plus recognition/SRS/tilt/domain/cache/distractor/guest/ranking/nickname/speed tests: 475 passing tests. JavaScript type checks pass.
 - Real Postgres integration: ten passing tests, including nickname propagation and stale-write rejection, concurrent one-use link consumption, fixed seats, atomic completion, idempotent study reviews, stored mistakes and review resets, live exclusions, and eight simultaneous join/answer requests. The membership case also rejects an outsider snapshot and action through the optimized room path.

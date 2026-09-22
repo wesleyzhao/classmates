@@ -1,6 +1,6 @@
 # Clean repository and ten-face entry
 
-This release keeps the existing Vercel project, production URL, database, portraits, login provider, accounts, tester grants and game modes. Work happens in `parlor-public-source` on `launch/ten-face-entry`; the old private repository and Claude checkout are retained.
+This release keeps the existing Vercel project, production URL, database, portraits, login provider, accounts, tester grants and game modes. The canonical checkout is `parlor-public-source` on public `main`; the old private repository and Claude checkout are retained.
 
 ## Release checklist
 
@@ -10,8 +10,8 @@ This release keeps the existing Vercel project, production URL, database, portra
 - [x] Preserve invitations, nickname editing, Practice, Speed, duels, quizzes, races and rankings.
 - [x] Run unit, type, API, browser, phone/desktop, privacy and build checks.
 - [x] Publish the clean repository and connect it to the existing Vercel project.
-- [ ] Enable a bounded ten-person guest sample outside Git, deploy to the same URL and verify production.
-- [ ] Record source/deployment, rollback, preservation evidence and remaining limitations.
+- [x] Enable a bounded ten-person guest sample outside Git, deploy to the same URL and verify production.
+- [x] Record source/deployment, rollback, preservation evidence and remaining limitations.
 
 The public repository must never acquire the private repository's old Git history. Future agent work belongs in the new repository. Real roster content and guest person IDs remain in private storage/configuration.
 
@@ -40,3 +40,17 @@ The guest limit is per browser, backed by a cookie and server result. A differen
 The first feature-branch CI run passed all unit tests but failed the documentation voice check. Range/countdown punctuation was corrected. The first branch push also revealed that the Git glob `*` did not cover names containing `/`; the rule now uses `**` with an explicit `main` exception. That preview had no production database, Blob or private authentication credentials. Production remained on the prior deployment throughout testing.
 
 For automatic production smoke checks, set the GitHub repository Actions variable `PRODUCTION_ORIGIN` to your public HTTPS origin. The workflow tests that stable URL because immutable Vercel deployment URLs may require Vercel authentication. It needs no private credentials and never disables preview protection. Manual workflow runs can specify another origin.
+
+## Production verification
+
+The first Git-connected production release is source `0023e3c`, Vercel deployment `dpl_GGpNKmLhMWv96Ji1KdpEtSjrQQq5` (READY). Vercel identifies `wesleyzhao/classmates`, branch `main`, as its source. Documentation-only follow-up commits may create later deployments with identical application code; consult the current Vercel alias for the latest deployment ID.
+
+- GitHub Tests and Production smoke test both pass. Public health/session work; seven full-deck/account/media routes reject anonymous access with 401 and private no-store headers.
+- Production reports quick landing, guest enabled with ten faces, and configured email delivery. Served entry, guest, shared artwork and stylesheet files match the reviewed source.
+- Fresh mobile Chromium and WebKit sessions each completed a real ten-photo guest round. Both showed 3-2-1, loaded all ten portraits before play, made no HTTP requests between the first nine answers, displayed the email form after completion, denied the full deck and resumed the same completed result after reload. Those test results remain anonymous and unclaimed; no account or competitive score was created.
+- The first live browser attempt encountered a network-change error. A later WebKit reload exceeded the initial five-second test limit; its measured recheck restored the result in 409 ms with no browser errors. Production photo loading took roughly a second per image in that check, overlapped by the bounded loader, before the countdown. This does not promise instant first-load network latency.
+- The existing signed-in account lands on ten-person Speed with its old best score and fastest-perfect record. Back to games, quizzes, races, Practice, nickname editing and rankings remain available. The account's nickname was not changed.
+- Exact comparisons preserved all four account IDs, three tester/owner session grants and two application settings, including the tester door. No production migration, roster reimport or cleanup ran. Existing private checkouts remain clean and untouched.
+- A post-release Vercel error-level log scan returned no entries. Phone screenshots of real content were inspected locally and remain ignored by Git. The public source/history scan found no private data or secrets.
+
+Both browser engines verified email-link/claim behavior against the isolated local outbox. No fresh production email was sent and no physical iPhone tilt test was performed in this release. Existing production email configuration and URL are unchanged.
