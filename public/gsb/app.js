@@ -21,7 +21,7 @@ import {
 import { clearPortraits, preloadPortraits } from "./media-cache.js";
 import { questionFor, questionView } from "../kits/recognition/questions.js";
 import { makeRng } from "../kits/_lib/rng.js";
-import { keepMissing, pickDirection, studyOrder } from "./learning.js";
+import { describeSpan, keepMissing, nextIntervals, pickDirection, review as scheduleReview, studyOrder } from "./learning.js";
 // A missed person returns this many cards later in the same session.
 const RETRY_AFTER = 5;
 const ROOM_INVITE = "Let's play"; // voice-ok: the owner's invite wording.
@@ -310,7 +310,7 @@ function App() {
       html`<button class="linkbtn account-link" onClick=${() => navigate("profile")}
         aria-label=${session.nickname ? `Edit nickname for ${session.nickname}` : "Your account"}>
         <span>${session.nickname || "Your account"}</span>
-        ${session.nickname && html`<span class="account-link-hint">Edit nickname</span>`}
+        ${session.nickname && html`<span class="account-link-hint">${session.access === "guest" ? "Guest. Sign in to keep scores" : "Edit nickname"}</span>`}
       </button>`}
     </header>
     ${session?.nickname &&
@@ -360,6 +360,15 @@ function App() {
             run=${run}
             guestAvailable=${guestAvailable}
             onGuest=${() => { setGuestOpen(true); history.pushState(null, "", "/guest"); }}
+            onPlayAsGuest=${async (code) => {
+              // A guest account for this challenge: in straight away, on the same screens as everyone else.
+              const entered = await run(async () => api("auth/guest", { code }));
+              if (!entered) return;
+              takeReturnPath();
+              setLoginToken(null);
+              acceptSession(entered.account);
+              openChallenge(entered.code);
+            }}
             onNewLink=${() => {
               setLoginToken(null);
               setError("");
@@ -419,7 +428,8 @@ function App() {
     </footer>
   </div>`;
 }
-function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest, invite = null, site, compact = false }) {
+function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest, onPlayAsGuest = null, invite = null, site, compact = false }) {
+  const [entering, setEntering] = useState(false);
   const [email, setEmail] = useState(""),
     [sent, setSent] = useState(false),
     [formError, setFormError] = useState(""),
@@ -446,6 +456,10 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
       Learn the class at your pace, or see how you do together.
     </p>`}
     ${invite && html`<p class="notice small" role="status">Sign in to join ${roomCode(invite) ? "room" : "speed challenge"} <strong>${roomCode(invite) || speedCode(invite)}</strong>. Your invitation will open after sign-in.</p>`}
+    ${invite && speedCode(invite) && onPlayAsGuest && !(token || sent) && html`<div class="guest-invite">
+      <button type="button" class="btn btn-primary" disabled=${entering} onClick=${async () => { setEntering(true); await onPlayAsGuest(speedCode(invite)); setEntering(false); }}>${entering ? "Coming in" : "Play now as a guest"}</button>
+      <p class="small muted">No email needed. Guest scores are not kept; sign in later to keep yours.</p>
+    </div>`}
     ${showGuest && html`<div class="guest-invite">
       <button class="btn btn-primary" onClick=${onGuest}>Try a 10-face speed round</button>
       <p class="small muted">One quick warm-up. No sign-in needed.</p>
@@ -501,8 +515,8 @@ function Login({ token, emailReady, onLogin, onNewLink, guestAvailable, onGuest,
   </section>`;
 }
 function Profile({ account, run, onSave, logout }) {
-  const door = account.access === "door";
-  const [name, setName] = useState(account.nickname || (door ? "" : defaultNickname(account.email))),
+  const door = account.access === "door", guest = account.access === "guest";
+  const [name, setName] = useState(account.nickname || (door || guest ? "" : defaultNickname(account.email))),
     [busy, setBusy] = useState(false);
   return html`<section class="narrow">
     <h1 class=${account.nickname ? "" : "sr-only"}>${account.nickname ? "Your account" : "Choose a nickname"}</h1>
@@ -533,13 +547,15 @@ function Profile({ account, run, onSave, logout }) {
         2 to ${NICKNAME_MAX} characters.<br />
         Your nickname appears in games, chat, and scores. And you can change it anytime. Your email stays private.
       </p>
-      ${!door && html`<p class="small muted">${account.email}</p>`}
+      ${!(door || guest) && html`<p class="small muted">${account.email}</p>`}
       <button class="btn btn-primary" disabled=${busy}>
         ${busy ? "Saving" : "Save nickname"}
       </button>
     </form>
-    ${account.nickname && html`<${LearningSummary} />`}
-    <button class="linkbtn" onClick=${logout}>Sign out</button>
+    ${guest && html`<div class="gsb-card"><p>You are playing as a guest. Guest scores are not kept.</p>
+      <button class="btn btn-primary" onClick=${logout}>Sign in with your email</button></div>`}
+    ${account.nickname && !guest && html`<${LearningSummary} />`}
+    <button class="linkbtn" onClick=${logout}>${guest ? "Leave" : "Sign out"}</button>
   </section>`;
 }
 function Direction({ value, onChange, mixed = true, compact = false, label = "What would you like to practice?" }) {
@@ -689,7 +705,9 @@ function Practice({ run, reviews }) {
       saving: false,
       error: false,
     };
-    setAnswer({ choice, correct, saved: false });
+    // Anki tells you when the card comes back; the same schedule the server keeps says it here.
+    const dueIn = scheduleReview(progress[question.target], correct, Date.now(), question.direction).dueAt - Date.now();
+    setAnswer({ choice, correct, saved: false, dueIn });
     submitting.current = false;
     reviews.add(review);
     // A miss comes back a few cards later in this same session, the same way round, like a learning step.
@@ -724,6 +742,7 @@ function Practice({ run, reviews }) {
   const missing = keepMissing(progress, deck.cards);
   const card = deck.cards.find((c) => c.id === question?.target);
   const again = !!queue[at]?.again;
+  const spans = question ? nextIntervals(progress[question.target], question.direction) : null;
   return html`<section>
     <div class="practice-head">
       <div class="row spread practice-controls">
@@ -764,7 +783,7 @@ function Practice({ run, reviews }) {
         html`<div class="question">
           <div class="row spread small muted">
             <span>Card ${at + 1} of ${queue.length}</span>
-            <span>${again ? "Again" : question.direction === "face" ? "Who is this?" : "Which face?"}</span>
+            <span>${again && html`<strong>Again</strong> · `}Right: ${describeSpan(spans.right)}, wrong: ${describeSpan(spans.wrong)}</span>
           </div>
           <${Answers}
             question=${view}
@@ -785,8 +804,8 @@ function Practice({ run, reviews }) {
                     : `This is ${card.answer}.`}</strong
                 >${" "}
                 ${answer.correct
-                  ? "We will space out the next review."
-                  : "They come back in a few cards, and sooner next time."}
+                  ? `Next in ${describeSpan(answer.dueIn)}.`
+                  : `Back in a few cards, then in ${describeSpan(answer.dueIn)}.`}
               </div>
               ${saveError &&
               html`<div class="notice error" role="alert">

@@ -109,9 +109,9 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.equal(blobReads.length, beforeReads + 1);
 
   const before = await db.query("select (select count(*) from gsb_matches) as matches,(select count(*) from gsb_ratings) as ratings");
-  const answers = started.data.questions.map((q) => ({ questionId: q.id, choice: q.correctChoice, elapsedMs: 1000 }));
+  const answers = started.data.questions.map((q) => ({ questionId: q.id, choice: q.correctChoice }));
   const wrong = answers.map((a) => ({ ...a, choice: String((Number(a.choice) + 1) % 2) }));
-  const results = await Promise.all([answers, wrong].map((a) => request("/api/guest/finish", { method: "POST", cookie: guestCookie, body: { answers: a } })));
+  const results = await Promise.all([answers, wrong].map((a) => request("/api/guest/finish", { method: "POST", cookie: guestCookie, body: { answers: a, elapsedMs: 500 } })));
   assert.ok(results.every((r) => r.status === 200));
   assert.deepEqual(results[0].data, results[1].data);
   assert.ok([0, 10].includes(results[0].data.correct));
@@ -123,6 +123,8 @@ test("fixed subset, exact assigned media, completion, claim and expiry through H
   assert.equal((await request("/api/session", { cookie: sessionA })).data.account.access, "email");
   const claimed = await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionA}` });
   assert.deepEqual(claimed.data.result, results[0].data);
+  // The claim also records the round as a two-choice quick speed run, so it sits in the speed records.
+  assert.equal((await db.query("select count(*)::int as n from gsb_sprint_runs where id=$1 and result is not null and (doc->>'guest')::boolean", [`guest-${hash(secret)}`]))[0].n, 1);
   assert.deepEqual((await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionA}` })).data, claimed.data);
   const sessionB = await login();
   assert.equal((await request("/api/guest/claim", { method: "POST", cookie: `${guestCookie}; ${sessionB}` })).data.result, null);

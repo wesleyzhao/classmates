@@ -78,7 +78,7 @@ test('a guest can resume and save after new-trial ceilings are reached; no extra
   assert.equal(resumed.status, 200);
   assert.equal(resumed.data.id, started.data.id);
   await seed(`guest-finish:${ipHash}`, 2998);
-  const body = {answers: started.data.questions.map(q => ({questionId: q.id, choice: q.correctChoice, elapsedMs: 250}))};
+  const body = {answers: started.data.questions.map(q => ({questionId: q.id, choice: q.correctChoice})), elapsedMs: 700};
   const finished = await request('guest/finish', body, started.cookie);
   assert.equal(finished.status, 200);
   assert.equal(finished.data.correct, 10);

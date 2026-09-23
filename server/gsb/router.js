@@ -9,6 +9,7 @@ import { faceHistories, faceSummary } from "./face-history.js";
 import { publicSiteConfig } from './site-config.js';
 import { CAMPUS_LIMITS, loginEmailDailyLimit } from './launch-limits.js';
 import { inviteFor, inviteShell } from './invite.js';
+import { normalizeCode } from "../../public/shared/codes.js";
 import { createChallenge, joinChallenge, challengeView, rematchChallenge, readyChallenge, beginChallenge, progressChallenge, prepareSprint, startSprint, finishSprint, sprintRecords, checkpointSprint } from "./sprint.js";
 import {
   authenticate,
@@ -18,6 +19,7 @@ import {
   deliverLink,
   emailReady,
   enterDoor,
+  enterGuest,
   hash,
   requestLink,
   roomIdentity,
@@ -122,6 +124,17 @@ export function createGsbHandler(deps = {}) {
         sessionCookie(res, result.session);
         return sendJson(res, 200, { account: result.account });
       }
+      if (p[0] === "auth" && p[1] === "guest" && method === "POST") {
+        // A guest joins the challenge whose link they opened; the code must be live, so links are the only way in.
+        await limit(`guest-account:${ip}`, 600, 3600000);
+        const body = await readJsonBody(req, { maxBytes: 1024 });
+        const code = normalizeCode(body.code);
+        const [live] = code ? await db.query("select code from gsb_sprint_challenges where code=$1 and expires_at>now()", [code]) : [];
+        if (!live) bad(404, "challenge_missing", "That challenge was not found or has ended. Sign in with your email to play.");
+        const result = await enterGuest(db);
+        sessionCookie(res, result.session);
+        return sendJson(res, 200, { account: result.account, code });
+      }
       if (p[0] === "auth" && p[1] === "verify" && method === "POST") {
         await limit(`verify:${ip}`, CAMPUS_LIMITS.verifyIp, 900000);
         const body = await readJsonBody(req, { maxBytes: 4096 }),
@@ -145,7 +158,7 @@ export function createGsbHandler(deps = {}) {
         bad(401, "login", "Sign in with your email to continue.");
       if (p[0] === "guest" && p.length === 2) {
         if (p[1] === "claim" && method === "POST")
-          return sendJson(res, 200, { result: await claimGuestRun(db, req, account) });
+          return sendJson(res, 200, { result: await claimGuestRun(db, req, account, await (deps.latestDeck ?? latestDeck)()) });
         if (p[1] === "best" && method === "GET")
           return sendJson(res, 200, { result: await guestBest(db, account) });
       }

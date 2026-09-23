@@ -207,7 +207,7 @@ export async function authenticate(db, req) {
   const account = rows[0] ?? null;
   // Keep explicit tester/owner grants, while disallowing normal sessions if the
   // deployment owner removes their email domain from the allowed cohort.
-  if (account && account.access !== 'door' && account.access !== 'owner-preview') {
+  if (account && !["door", "owner-preview", "guest"].includes(account.access)) {
     try { stanfordEmail(account.email); }
     catch (error) { if (error.status === 400) return null; throw error; }
   }
@@ -270,4 +270,23 @@ export async function enterDoor(db, code) {
 /** Accounts that came in through the door, for the close step's purge. */
 export async function doorAccounts(db) {
   return (await db.query("select id,nickname from gsb_accounts where email like 'door-%@door.invalid' order by created_at")).map((r) => ({ id: r.id, nickname: r.nickname }));
+}
+
+// ---------- guests: play a challenge from its link now, sign in with an email later ----------
+// A guest is a fresh unverified account named Guest-XYZ with a week-long session. It can join the challenge it
+// came for and appear in that room's standings; its runs never count in the speed records (see sprintRecords).
+export const GUEST_EMAIL = "guest-%@guest.invalid";
+/** Whether an account came in as a guest, by the address pattern only guests get. */
+export const isGuestEmail = (email) => /^guest-[a-z0-9_-]+@guest\.invalid$/i.test(String(email ?? ""));
+/** Come in as a guest: a fresh unverified account with a nickname and a week-long session. */
+export async function enterGuest(db) {
+  const session = token(), id = token().slice(0, 22);
+  const tag = Array.from({ length: 3 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)]).join("");
+  const rows = await db.query(
+    `with account as (insert into gsb_accounts(id,email,nickname) values($1,$2,$4) returning id,email,nickname),
+    session as (insert into gsb_sessions(hash,account_id,expires_at,purpose) select $3,id,now()+interval '7 days','guest' from account)
+    select id,email,nickname,'guest' as access from account`,
+    [id, `guest-${id.toLowerCase()}@guest.invalid`, hash(session), `Guest ${tag}`],
+  );
+  return { account: rows[0], session };
 }

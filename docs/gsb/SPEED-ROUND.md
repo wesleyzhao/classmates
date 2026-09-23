@@ -65,6 +65,10 @@ Solo run documents and their 20-to-10 segments now explicitly record `choices`. 
 
 The home's speed card opens the two-door round in ten or twenty; the four-corner round and its match settings live only at `/speed/classic`. A duel takes the length chosen on the speed screen.
 
+## Guests from a link (2026-09-22)
+
+A challenge link opened while signed out offers "Play now as a guest" beside the sign-in form. `POST /api/auth/guest {code}` (600 an hour per IP) checks the code is a live challenge, makes an unverified account named `Guest XYZ` (email `guest-<id>@guest.invalid`, session purpose `guest`, a week) and the client opens the room as that account. Guests play and rank inside the room like anyone else; `sprintRecords` leaves their runs out of the personal and class records, the speed screen and results tell them so, and the profile offers "Sign in with your email" (a sign-out; nothing is merged). The lobby shows a dimmed "A classmate · Not in yet" seat until someone joins.
+
 ## One path, solo or not (2026-09-22)
 
 The speed screen (`/speed`, and `/` on the quick landing) no longer prepares a solo run; it fetches records only (`useSprintRound` with `prepareOnOpen: false`). Both of its buttons make the same two-door room (`mode: "duel"`): "Challenge classmates" opens the lobby at `/speed/CODE`; "Start the clock" opens the same room with `autoStart`, which begins the host's count as soon as the photos are loaded and nobody else is in. So a solo run is a room of one: it ends on the room's result screen, whose link lets a classmate play the same faces later (as a late joiner, above), with "Challenge a classmate" (the share sheet carries the score) and "Play again" (a rematch that starts itself). "Rematch" and "Share my score" appear once someone else is in. The screen calls the whole thing a speed run; "duel" is only the server's mode name. The classmate walking across the screen is the game piece from the share preview (`mascot.png`, cropped from `og.png`); tapping him starts the clock.

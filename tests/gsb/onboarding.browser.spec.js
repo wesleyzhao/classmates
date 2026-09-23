@@ -35,7 +35,7 @@ test("preview starts at countdown, captures email, creates nickname, saves guest
   expect(round.count).toBe(10);
   await expect(game.locator(".answer.door")).toHaveCount(2);
   for (let i = 0; i < 10; i++) {
-    await expect(game.getByText(`${i + 1} / 10`, { exact: true })).toBeVisible();
+    await expect(game.locator(".guest-round")).toHaveAttribute("data-question-id", round.questions[i].id);
     await game.locator(".guest-round .answer").nth(Number(round.questions[i].correctChoice)).tap();
   }
   await expect(game.locator(".guest-result")).toContainText("10 of 10 correct");

@@ -392,3 +392,32 @@ test("a shared link's page carries a preview that names who is asking, and a pla
   const escaped = await page(`shell=speed&code=${created.data.code}`);
   assert.match(escaped.html, /better than Ampers&amp;nd &lt;b&gt;\?"/, "a nickname cannot break out of the attribute");
 });
+
+test("a challenge link lets a guest in without an email; guest runs stay out of the speed records", async () => {
+  const host = await login();
+  await request("/api/profile", { method: "POST", cookie: host.cookie, body: { nickname: "Inviting host" } });
+  const duel = (await request("/api/sprint/challenge", { method: "POST", cookie: host.cookie, body: { direction: "face", length: "quick", mode: "duel" } })).data;
+  assert.equal((await request("/api/auth/guest", { method: "POST", body: { code: "ZZZZ" } })).status, 404, "only a live code lets a guest in");
+  const entered = await request("/api/auth/guest", { method: "POST", body: { code: duel.code.toLowerCase() } });
+  assert.equal(entered.status, 200);
+  assert.match(entered.data.account.nickname, /^Guest [A-Z]{3}$/);
+  assert.equal(entered.data.account.access, "guest");
+  assert.equal(entered.data.code, duel.code);
+  const session = await request("/api/session", { cookie: entered.cookie });
+  assert.equal(session.data.account.access, "guest");
+  const joined = await request(`/api/sprint/challenge/${duel.code}/join`, { method: "POST", cookie: entered.cookie });
+  assert.equal(joined.status, 200);
+  assert.ok(joined.data.standings.some((s) => s.nickname === entered.data.account.nickname), "the guest is in the room");
+  // The guest plays after the count on their own clock and finishes; the room ranks them, the records do not.
+  await request(`/api/sprint/challenge/${duel.code}/ready`, { method: "POST", cookie: entered.cookie, body: { version: joined.data.selectionVersion } });
+  const begun = await request(`/api/sprint/challenge/${duel.code}/begin`, { method: "POST", cookie: host.cookie, body: { version: joined.data.selectionVersion } });
+  assert.equal(begun.status, 200);
+  await new Promise((r) => setTimeout(r, Math.max(0, begun.data.startsAt - Date.now() + 50)));
+  const answers = joined.data.questions.map((q) => ({ questionId: q.id, choice: q.correctChoice }));
+  assert.equal((await request("/api/sprint/finish", { method: "POST", cookie: entered.cookie, body: { id: joined.data.id, answers, elapsedMs: 40 } })).status, 200);
+  const standings = (await request(`/api/sprint/challenge/${duel.code}`, { cookie: host.cookie })).data.standings;
+  assert.equal(standings.find((s) => s.accountId === entered.data.account.id).result.correct, 10);
+  const records = (await request("/api/sprint/records?direction=face&length=quick&choices=2", { cookie: host.cookie })).data;
+  assert.ok(!records.leaders.some((l) => /^Guest /.test(l.nickname)), "guest results never lead the class records");
+  assert.equal((await request("/api/sprint/records?direction=face&length=quick&choices=2", { cookie: entered.cookie })).data.bestScore, null, "a guest has no saved records");
+});

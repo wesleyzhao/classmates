@@ -75,6 +75,11 @@
 .sprint-stage :is(.challenge-standings, .seats, .versus) li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--arcade-panel); border: 2px solid var(--arcade-line); font-family: var(--font-pixel); font-size: 20px; line-height: 1.1; text-transform: none; }
 .sprint-stage :is(.challenge-standings, .seats, .versus) li.me { border-color: var(--arcade-gold); }
 .sprint-stage .seats li { grid-template-columns: minmax(0, 1fr) auto; }
+.sprint-stage .seats li { font-size: 24px; padding: 12px 14px; }
+.sprint-stage .seats li .how { font-size: 20px; }
+/* the empty seat: the same row, dimmed, until a classmate takes it */
+.sprint-stage .seats li.empty { border-style: dashed; opacity: 0.6; }
+.sprint-stage .seats li.empty .who, .sprint-stage .seats li.empty .how { color: var(--arcade-ink-2); }
 .sprint-stage .seats li .how { color: var(--arcade-bad); }
 .sprint-stage .seats li.ready .how { color: var(--arcade-good); }
 .sprint-stage .versus li.win { background: #2a2408; }
@@ -278,16 +283,16 @@
 @keyframes sprint-blink { 50% { opacity: 0; } }
 /* the parade: the game piece from the share preview crosses the space left over; tapping him starts the clock */
 .sprint-home .parade { position: relative; flex: 1 1 auto; min-height: 184px; overflow: hidden; margin: 0 -20px; }
-.sprint-home .mascot { position: absolute; bottom: 8px; left: -120px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; animation: mascot-cross 12s linear -4s infinite; }
+.sprint-home .mascot { position: absolute; bottom: 8px; left: -120px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; animation: mascot-cross 7s linear -2.5s infinite, mascot-hop 380ms steps(2) infinite; }
 .sprint-home .mascot .mtag { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 9px 5px; background: #fff; color: var(--arcade-bg); border: 2px solid var(--arcade-bg); box-shadow: 0 0 0 2px var(--arcade-gold); }
 .sprint-home .mascot .tl { font-family: var(--font-arcade); font-size: 6px; color: var(--arcade-cardinal); text-transform: uppercase; line-height: 1; }
 .sprint-home .mascot .tn { font-family: var(--font-pixel); font-size: 20px; line-height: 0.9; text-shadow: var(--pixel-bold); }
-.sprint-home .mascot .mhead { width: 58px; height: 58px; border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: var(--arcade-panel); overflow: hidden; animation: mascot-hop 500ms steps(2) infinite; }
+.sprint-home .mascot .mhead { width: 58px; height: 58px; border: 3px solid var(--arcade-bg); box-shadow: 0 0 0 3px var(--arcade-gold); background: var(--arcade-panel); overflow: hidden; }
 .sprint-home .mascot .mhead img { display: block; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; }
 .sprint-home .mascot .bod { display: block; width: 72px; height: 54px; margin-top: 3px; background: var(--body-down) center / 100% 100% no-repeat; image-rendering: pixelated; animation: sprint-frames 500ms steps(1) infinite; }
 .sprint-home .mascot:active { filter: brightness(1.2); }
 @keyframes mascot-cross { from { left: -120px; } to { left: 100%; } }
-@keyframes mascot-hop { 50% { transform: translateY(-3px); } }
+@keyframes mascot-hop { 50% { transform: translateY(-11px); } }
 @media (prefers-reduced-motion: reduce) {
   .sprint-stage .btn.glow, .sprint-stage .btn.glow .cursor, .sprint-home .mascot, .sprint-home .mascot .mhead, .sprint-home .mascot .bod { animation: none; }
   .sprint-home .mascot { left: 50%; translate: -50% 0; }

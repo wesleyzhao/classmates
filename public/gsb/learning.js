@@ -80,3 +80,20 @@ export function keepMissing(progress, cards, limit = 6) {
     .sort((a, b) => b.misses - a.misses || b.lastAt - a.lastAt)
     .slice(0, limit);
 }
+
+/** How long until the next ask if the next answer is right, and if it is wrong, for the card's current memory. */
+export function nextIntervals(memory, direction = "face", now = Date.now()) {
+  return { right: review(memory, true, now, direction).dueAt - now, wrong: review(memory, false, now, direction).dueAt - now };
+}
+
+/** A span in the shortest honest words: 1 min, 10 min, 3 h, 1 day, 3 days, 2 weeks, 4 months. */
+export function describeSpan(ms) {
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 60) return `${Math.max(1, minutes)} min`;
+  const hours = Math.round(ms / 3600000);
+  if (hours < 24) return `${hours} h`;
+  const days = Math.round(ms / DAY);
+  if (days < 14) return `${days} day${days === 1 ? "" : "s"}`;
+  if (days < 60) return `${Math.round(days / 7)} weeks`;
+  return `${Math.round(days / 30)} months`;
+}

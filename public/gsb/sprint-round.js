@@ -286,7 +286,7 @@ export function SprintRound({ account, onExit, challenge = null, onChallenge = n
       </div>
       ${codeForm}
       ${footer}
-      <${SprintRecords} records=${records} choices=${round?.choices ?? choices} />
+      ${account.access === "guest" ? html`<p class="small">Playing as a guest: scores are not kept. Sign in with your email to keep yours.</p>` : html`<${SprintRecords} records=${records} choices=${round?.choices ?? choices} />`}
     </div>
   </section>`;
 }

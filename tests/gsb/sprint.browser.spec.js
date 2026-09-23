@@ -600,3 +600,25 @@ test("default two-door solo accepts arrows and keeps classic four-choice play se
   await page.keyboard.press("4");
   await expect(page.locator(".sprint-play")).toHaveAttribute("data-question-id",classic.questions[1].id);
 });
+
+test("a challenge link opened while signed out can be played right away as a guest", async ({ page, browser }) => {
+  await login(page);
+  await page.goto("/speed");
+  await expect(page.getByRole("button", { name: "Start the clock" })).toBeVisible();
+  const created = page.waitForResponse(r => r.url().endsWith("/api/sprint/challenge") && r.status() === 201);
+  await page.getByRole("button", { name: "Challenge classmates" }).click();
+  const duel = await (await created).json();
+  const other = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const guest = await other.newPage();
+  await guest.context().setExtraHTTPHeaders({ "x-forwarded-for": `2001:db8::${randomUUID().slice(0, 8)}` });
+  await guest.goto(`/speed/${duel.code}`);
+  await expect(guest.locator(".notice", { hasText: "Sign in to join speed challenge" })).toContainText(duel.code);
+  await guest.getByRole("button", { name: "Play now as a guest" }).click();
+  await expect(guest).toHaveURL(new RegExp(`/speed/${duel.code}$`));
+  await expect(guest.getByRole("button", { name: "I'm ready" })).toBeVisible();
+  await expect(guest.locator(".gsb-masthead")).toContainText("Guest");
+  await expect(page.locator(".seats li")).toHaveCount(2, { timeout: 10000 });
+  await expect(page.locator(".seats li").nth(1)).toContainText("Guest");
+  await expect(page.locator(".seats li.empty")).toHaveCount(0);
+  await other.close();
+});

@@ -32,7 +32,7 @@ test("guest sprint finishes once, retries safely, and saves only after email sig
   await mkdir(`output/gsb-screenshots/${browserName}`, { recursive: true });
   await page.screenshot({ path: `output/gsb-screenshots/${browserName}/guest-phone.png`, fullPage: true });
   for (let i = 0; i < round.count; i++) {
-    await expect(page.getByText(`${i + 1} / 10`, { exact: true })).toBeVisible();
+    await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", String(i));
     const choice = i === 2 ? (Number(round.questions[i].correctChoice) + 1) % 2 : Number(round.questions[i].correctChoice);
     await page.locator(".guest-round .answer").nth(choice).tap();
   }
@@ -79,13 +79,18 @@ test("guest sprint finishes once, retries safely, and saves only after email sig
   expect(errors).toEqual([]);
 });
 
-test("guest timeout advances and refresh resumes the same bounded round", async ({ page }) => {
+test("a refresh counts down again and resumes the same bounded round where it was", async ({ page }) => {
   const round = await openRound(page);
-  await expect(page.getByText("2 / 10", { exact: true })).toBeVisible({ timeout: 11000 });
+  await expect(page.locator(".guest-round .lane.me .head")).toHaveCount(10);
+  await page.locator(".guest-round .answer").nth(Number(round.questions[0].correctChoice)).tap();
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "1");
   const state = await page.evaluate((id) => JSON.parse(localStorage.getItem(`gsb-guest-attempt:${id}`)), round.id);
-  expect(state.answers[0]).toEqual({ questionId: "0", choice: null, elapsedMs: 8000 });
+  expect(state.answers[0]).toEqual({ questionId: "0", choice: round.questions[0].correctChoice });
   await page.reload();
-  await expect(page.getByText("2 / 10", { exact: true })).toBeVisible();
+  // Back after leaving: the 3-2-1 runs again, then the round continues on its clock.
+  await expect(page.getByRole("status", { name: "Starting in 3" })).toBeVisible();
+  await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "1");
+  await expect(page.locator(".guest-round .lane.me .head.gone")).toHaveCount(1);
   const resumed = await (await page.request.get("/api/guest")).json();
   expect(resumed.id).toBe(round.id);
   expect(resumed.questions.map((q) => q.image)).toEqual(round.questions.map((q) => q.image));
@@ -161,7 +166,7 @@ test("guest entry shows the countdown while the round request is pending, withou
   release();
   await expect(page.getByRole("status", { name: "Starting in 1" })).toBeVisible();
   await expect(page.locator(".guest-round")).toHaveAttribute("data-question-id", "0");
-  await expect(page.getByText("1 / 10", { exact: true })).toBeVisible();
+  await expect(page.locator(".guest-round .sprint-hud")).toContainText("Left");
 });
 
 test("failed photo preparation retries the same guest run and releases its blobs on exit", async ({ page }) => {

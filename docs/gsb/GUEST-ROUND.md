@@ -14,7 +14,7 @@ For a class-wide launch, new trials allow 1,000 per shared IP per hour and 2,000
 
 The result screen contains the email form directly. Entering an eligible email sends a magic link to that address; verifying the link is required to continue or save. The same-browser cookie claims the result exactly once after verified sign-in. Opening the link in another browser cannot claim the original browser's trial. The nickname step remains, followed by the ten-face Speed screen and a visible saved-score confirmation. Claimed scores remain available under Scores. Existing tester grants remain separate and cannot claim a guest score as verified email accounts.
 
-Guest scores are personal, unranked results. They never enter competitive Speed records or multiplayer ratings. The existing claim trigger records the faces seen/right/wrong in cross-mode history. Practice-only spaced repetition stays separate.
+Guest rounds are scored like speed runs (1,000 a correct face plus up to 999 for a fast round, one clock for the ten) and, once claimed, are recorded as a two-choice quick speed run (`gsb_sprint_runs` id `guest-<hash>`, `doc.guest: true`), so they sit in the same records and class standings as everyone else. Multiplayer ratings are untouched. The existing claim trigger records the faces seen/right/wrong in cross-mode history. (Changed 2026-09-22 at Wesley's request; before that guest scores were unranked and per-question timed.) Practice-only spaced repetition stays separate.
 
 ## Controller and media
 
@@ -22,7 +22,7 @@ Guest scores are personal, unranked results. They never enter competitive Speed 
 
 Each question allows eight seconds. New rounds have exactly two names, sharing the duel's named bodies and portrait drop interaction. A tap, left/right drag or flick, arrow key, or number key (1 or 2) advances immediately. Correct/wrong animation runs independently; no HTTP request or animation timeout separates questions. The displayed question ID is consumed synchronously to reject duplicate events. Held number keys do not repeat. A timeout records a null answer and advances.
 
-The browser keeps only opaque run/question IDs, answer indices, elapsed times and the current timer in localStorage, allowing interrupted attempts to resume after a tab closes. Older sessionStorage attempts still restore. Names, photos and authentication credentials are never persisted there. A failed finish keeps the answer log for retry; success clears it. Media object URLs live only in memory and are revoked on exit.
+The browser keeps only opaque run/question IDs, answer indices and the clock's start in localStorage, allowing interrupted attempts to resume after a tab closes; coming back runs the 3-2-1 again and the round continues on the clock it started with. Older sessionStorage attempts still restore. Names, photos and authentication credentials are never persisted there. A failed finish keeps the answer log for retry; success clears it. Media object URLs live only in memory and are revoked on exit.
 
 `two-door-pieces.js` shares the named bodies, portrait and gesture mapping with signed-in Speed and Duel. Previously issued four-choice guest attempts still render with `sprint-pieces.js` and restore normally. Keep result feedback and inline form errors inside the full-screen cabinet. Shell-level messages can be obscured by that panel.
 
@@ -30,7 +30,7 @@ The browser keeps only opaque run/question IDs, answer indices, elapsed times an
 
 - `GET /api/session` exposes only `{guest:{enabled,count}}`, never allowlist IDs.
 - `POST /api/guest/start` creates or resumes one run; `GET /api/guest` reads it.
-- `POST /api/guest/finish` accepts ordered `{answers:[{questionId,choice,elapsedMs}]}`. Choices must match an issued answer ID (0 or 1 for new rounds, 0 through 3 for older rounds), or null; elapsed times are bounded integers. The server scores all answers, stores one result atomically and returns that first result on retries/concurrent finishes. Existing eight-question documents remain scoreable by their own length.
+- `POST /api/guest/finish` accepts ordered `{answers:[{questionId,choice}], elapsedMs}`. Every choice must match an issued answer ID; `elapsedMs` is the whole round, a bounded integer no larger than the time since the cookie was minted. The server scores it with the speed run's `scoreSprint`, stores one result atomically and returns that first result on retries/concurrent finishes.
 - `GET /api/guest/media/ASSET` requires the cookie, the exact assigned target asset, the current allowlist and a non-excluded person. Historical/alternate assets and the full `/api/media` route remain denied.
 - Authenticated `POST /api/guest/claim` attaches a completed result once to a verified email account. `GET /api/guest/best` returns its best valid personal guest result.
 

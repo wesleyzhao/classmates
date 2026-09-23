@@ -15,7 +15,7 @@ const pad2 = (n) => String(n).padStart(2, "0");
 const side = doorSide;
 
 /** Who is in and how far along: a row of the heads still to clear, shrinking as the player goes. */
-function Lane({ label, me, questions, index, photoUrls, dim = false, leading = false }) {
+export function Lane({ label, me, questions, index, photoUrls, dim = false, leading = false }) {
   return html`<div class="lane ${me ? "me" : "them"} ${dim ? "dim" : ""} ${leading ? "leading" : ""}">
     <span class="who">${label}</span>
     <div class="row">${questions.map((q, i) => html`<span key=${q.id} class="head ${i < index ? "gone" : i === index ? "next" : ""}">${photoUrls?.get(q.image) && html`<img src=${photoUrls.get(q.image)} alt="" />`}</span>`)}</div>
@@ -105,6 +105,7 @@ export function DuelRound({ account, R, onExit, onChallenge, autoStart = false }
       <span class="who">${s.nickname}${s.accountId === contest.hostId ? " · host" : ""}</span>
       <span class="how">${s.result ? "Finished" : s.status === "playing" ? "Playing" : s.ready || s.accountId === contest.hostId ? "Ready" : "Not ready yet"}</span>
     </li>`)}
+    ${!others.length && html`<li class="seat empty" aria-live="polite"><span class="who">A classmate</span><span class="how">Not in yet</span></li>`}
   </ol>`;
   // The rematch is a new room with the same settings; alone, it starts its own count like the first run did.
   const followRematch = async (auto = false) => {
@@ -182,7 +183,7 @@ export function DuelRound({ account, R, onExit, onChallenge, autoStart = false }
         <div class="eyebrow">Speed run ${code}</div>
         <h1 ref=${resultHeading} tabindex="-1" class="title">${heading}</h1>
         ${result && html`<p class="big">${result.correct} of ${result.count} correct in <strong>${seconds(result.elapsedMs)}</strong>, ${result.score.toLocaleString()} points.</p>`}
-        <p role="status" class="small">${saved ? "Saved to your speed records." : saving ? "Saving your result." : unsavable ? "This result could not be saved. You can start a fresh round." : "This result has not been saved yet."}</p>
+        <p role="status" class="small">${account.access === "guest" && saved ? "Guest scores are not kept. Sign in with your email to keep yours." : saved ? "Saved to your speed records." : saving ? "Saving your result." : unsavable ? "This result could not be saved. You can start a fresh round." : "This result has not been saved yet."}</p>
         ${error && html`<p class="notice error" role="alert">${error}</p>`}
         ${!(saved || unsavable) && html`<button class="btn btn-primary" disabled=${saving} onClick=${save}>Retry saving result</button>`}
         <ol class="versus" aria-label="Standings">${(contest?.standings || []).map((s, i) => html`<li key=${s.accountId} class=${`${s.accountId === account.id ? "me" : ""} ${s.result && i === 0 ? "win" : ""}`}>
@@ -238,7 +239,6 @@ export function DuelRound({ account, R, onExit, onChallenge, autoStart = false }
     <div class="cab attract">
       <div class="eyebrow">Speed run · ${count} classmates</div>
       <h1 class="title">Challenge <span class="challenge-code">${code}</span></h1>
-      <p>Same ${count} faces they had. Drop each face on the body with their name, left or right.</p>
       <ol class="versus" aria-label="Standings">${(contest?.standings || []).map((s) => html`<li key=${s.accountId} class=${s.accountId === account.id ? "me" : ""}>
         <span class="rank"></span>
         <span class="who">${s.nickname}</span>
@@ -259,7 +259,6 @@ export function DuelRound({ account, R, onExit, onChallenge, autoStart = false }
     <div class="cab attract">
       <div class="eyebrow">Speed run · ${count} classmates</div>
       <h1 class="title">Challenge <span class="challenge-code">${code}</span></h1>
-      <p>Same ${count} people for everyone, same count. Drop each face on the body with their name, left or right.</p>
       <div class="row">${invite}</div>
       <h2 class="lbl-heading">Who is in</h2>
       ${seats}

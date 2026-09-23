@@ -54,7 +54,7 @@ export async function sprintRecords(db, account, deck, direction, length, choice
   const c = context(deck, direction, length), d = dimensions(c);
   const where = "revision=$1 and cohort=$2 and direction=$3 and length=$4 and count=$5 and scoring_version=$6 and coalesce((doc->>'choices')::integer,4)=$8 and result is not null";
   const [row] = await db.query(`
-    with runs as (select account_id,result,finished_at from gsb_sprint_runs where ${where}),
+    with runs as (select r.account_id,r.result,r.finished_at from gsb_sprint_runs r join gsb_accounts g on g.id=r.account_id where ${where} and g.email not like 'guest-%@guest.invalid'),
     best as (select distinct on (account_id) account_id,result,finished_at from runs order by account_id,(result->>'score')::integer desc,(result->>'elapsedMs')::integer asc,finished_at asc),
     perfect as (select distinct on (account_id) account_id,result,finished_at from runs where (result->>'perfect')::boolean order by account_id,(result->>'elapsedMs')::integer asc,finished_at asc)
     select
@@ -362,4 +362,17 @@ export async function checkpointSprint(db, account, id, answers, seen, epoch = "
   const [saved] = await db.query("select gsb_checkpoint_sprint($1,$2,$3::jsonb) as ok",[id,account.id,JSON.stringify({answers,seen,epoch})]);
   if (!saved.ok) fail(409,"sprint_history","This round history could not be saved.");
   return {ok:true};
+}
+
+/** Record a claimed guest round as this account's speed run, so it sits in the two-choice records with everyone
+ * else's. The row's id is the guest run's key, so a repeated claim cannot record it twice. */
+export async function recordGuestRun(db, account, deck, key, doc) {
+  const result = doc?.result;
+  if (!result || !Array.isArray(result.answers) || !Array.isArray(doc.questions)) return;
+  const c = context(deck, "face", "quick");
+  const order = doc.questions.map((q) => ({ id: q.id, direction: "face", target: q.target, options: q.options }));
+  const stored = { ...result, direction: "face", length: "quick", revision: doc.revision };
+  await db.query(`insert into gsb_sprint_runs(id,account_id,revision,cohort,direction,length,count,scoring_version,doc,started_at,expires_at,finished_at,result)
+    values($1,$2,$3,$4,'face','quick',$5,$6,$7::jsonb,now()-($8::integer*interval '1 millisecond'),now(),now(),$9::jsonb) on conflict (id) do nothing`,
+    [`guest-${key}`, account.id, doc.revision, c.cohort, order.length, VERSION, JSON.stringify({ questions: order, choices: 2, guest: true }), result.elapsedMs, JSON.stringify(stored)]);
 }

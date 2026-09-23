@@ -103,11 +103,10 @@ test("one cookie gets one ten-face run, even after completion and refresh", asyn
     const { db, runs } = stub(), res = response();
     const started = await startGuestRun(db, { headers: {} }, res, deck);
     assert.equal(started.status, "ready");
-    assert.equal(started.questionMs, 8000);
     assert.equal(started.questions.length, 10);
     assert.ok(started.questions.every(q => q.choices.length === 2));
-    const invalid = started.questions.map(q => ({questionId:q.id,choice:"2",elapsedMs:0}));
-    await assert.rejects(finishGuestRun(db, request(res), {answers:invalid}), /not valid/);
+    const invalid = started.questions.map(q => ({questionId:q.id,choice:"2"}));
+    await assert.rejects(finishGuestRun(db, request(res), {answers:invalid, elapsedMs:1000}), /not valid/);
     assert.ok(res.headers["Set-Cookie"].includes("HttpOnly"));
     assert.ok(res.headers["Set-Cookie"].includes("SameSite=Lax"));
     assert.ok(res.headers["Set-Cookie"].includes("Max-Age=31536000"));
@@ -116,9 +115,10 @@ test("one cookie gets one ten-face run, even after completion and refresh", asyn
     assert.deepEqual(await startGuestRun(db, req, response(), deck), await getGuestRun(db, req));
     assert.equal(runs.size, 1);
     const row = [...runs.values()][0],
-      answers = row.doc.questions.map((question) => ({ questionId: question.id, choice: question.correctChoice, elapsedMs: 0 }));
-    const result = await finishGuestRun(db, req, { answers });
-    assert.equal(result.score, 15000);
+      answers = row.doc.questions.map((question) => ({ questionId: question.id, choice: question.correctChoice }));
+    const result = await finishGuestRun(db, req, { answers, elapsedMs: 1000 });
+    assert.equal(result.score, 10987, "scored like a speed run: 1,000 a face and up to 999 for a fast round");
+    assert.equal(result.elapsedMs, 1000); assert.equal(result.perfect, true);
     assert.equal(result.correct, 10);
     assert.deepEqual(await finishGuestRun(db, req, { answers: [] }), result);
     assert.equal((await getGuestRun(db, req)).status, "complete");
@@ -127,27 +127,24 @@ test("one cookie gets one ten-face run, even after completion and refresh", asyn
   } finally { restore(); }
 });
 
-test("logs have exact order, choices, and bounded integer elapsed times", () => {
-  const doc = { questions: Array.from({ length: 10 }, (_, index) => ({ id: String(index), correctChoice: "2", choices: [0,1,2,3].map(n => ({id:String(n)})) })) };
-  const logs = doc.questions.map((question) => ({ questionId: question.id, choice: "2", elapsedMs: 7999 }));
-  const result = scoreGuestRun(doc, logs);
-  assert.equal(result.score, 10160);
-  assert.equal(result.elapsedMs, 79990);
-  const atCutoff = logs.map((item, index) => index === 0 ? { ...item, elapsedMs: 8000 } : item);
-  const cutoffResult = scoreGuestRun(doc, atCutoff);
-  assert.equal(cutoffResult.correct, 9);
-  assert.equal(cutoffResult.answers[0].choice, null);
-  const skipped = logs.map((item, index) => index === 0 ? { ...item, choice: null, elapsedMs: 8000 } : item);
-  assert.equal(scoreGuestRun(doc, skipped).correct, 9);
-  for (const altered of [
-    logs.slice(0, 7),
-    logs.map((item, index) => index === 0 ? { ...item, questionId: "7" } : item),
-    logs.map((item, index) => index === 0 ? { ...item, choice: "4" } : item),
-    logs.map((item, index) => index === 0 ? { ...item, choice: 2 } : item),
-    logs.map((item, index) => index === 0 ? { ...item, elapsedMs: 8001 } : item),
-    logs.map((item, index) => index === 0 ? { ...item, elapsedMs: 0.5 } : item),
-    logs.map((item, index) => index === 0 ? { ...item, choice: null, elapsedMs: 100 } : item),
-  ]) assert.throws(() => scoreGuestRun(doc, altered));
+test("logs have exact order and offered choices, and the round time is a bounded integer", () => {
+  const doc = { questions: Array.from({ length: 10 }, (_, index) => ({ id: String(index), correctChoice: "1", choices: [0,1].map(n => ({id:String(n)})) })) };
+  const logs = doc.questions.map((question) => ({ questionId: question.id, choice: "1" }));
+  const result = scoreGuestRun(doc, logs, 20000);
+  assert.equal(result.score, 10749);
+  assert.equal(result.elapsedMs, 20000);
+  assert.deepEqual(result.answers, logs.map(() => "1"));
+  const missedOne = logs.map((item, index) => index === 0 ? { ...item, choice: "0" } : item);
+  assert.equal(scoreGuestRun(doc, missedOne, 20000).correct, 9);
+  assert.equal(scoreGuestRun(doc, missedOne, 20000).perfect, false);
+  for (const [altered, elapsed] of [
+    [logs.slice(0, 7), 20000],
+    [logs.map((item, index) => index === 0 ? { ...item, questionId: "7" } : item), 20000],
+    [logs.map((item, index) => index === 0 ? { ...item, choice: "2" } : item), 20000],
+    [logs.map((item, index) => index === 0 ? { ...item, choice: 1 } : item), 20000],
+    [logs.map((item, index) => index === 0 ? { ...item, choice: null } : item), 20000],
+    [logs, 0], [logs, 0.5], [logs, 3600001],
+  ]) assert.throws(() => scoreGuestRun(doc, altered, elapsed));
 });
 
 test("guest media stays assigned and live; claims require verified session scope", async () => {
@@ -162,8 +159,8 @@ test("guest media stays assigned and live; claims require verified session scope
     assert.equal(await claimGuestRun(db, req, { id: "account", access: "email" }), null);
     // The completed result can be claimed once and never enters a competitive table.
     const run = await getGuestRun(db, req);
-    const answers = run.questions.map((question) => ({ questionId: question.id, choice: null, elapsedMs: 8000 }));
-    await finishGuestRun(db, req, { answers });
+    const answers = run.questions.map((question) => ({ questionId: question.id, choice: String(1 - Number(question.correctChoice)) }));
+    await finishGuestRun(db, req, { answers, elapsedMs: 500 });
     assert.equal(await claimGuestRun(db, req, { id: "owner", access: "owner-preview" }), null);
     assert.equal((await claimGuestRun(db, req, { id: "account", access: "email" })).score, 0);
     assert.equal((await claimGuestRun(db, req, { id: "account", access: "email" })).score, 0);
